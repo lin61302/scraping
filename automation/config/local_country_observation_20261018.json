@@ -1,6 +1,6 @@
 {
   "campaign_id": "local-country-observation-20261018-through-20260930",
-  "code_git_commit": "3dd2caf11fac10a93aa0ddae490ba08f7f871717",
+  "code_git_commit": "d30c371178fff298bf662554cf18ac264a4e9613",
   "concurrency": {
     "browser": 0,
     "max_active_country_sessions": 4,
@@ -64,10 +64,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "0e57e2248a0b43345d1799ea2b7d6c8905ae53d236f6c58949a330aeb0614488",
+          "execution_bundle_sha256": "434f7128512c218452677ab37471e150fd23ab1c3f99951fbd1312b110c4bb38",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "cf9c0c6fc4288525ee7d3ec2008d0275f165ba7ed3027f786143c6de5e9879f3",
@@ -101,10 +101,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "d0cc22a32217ebbf110498a8dec86acdacc4412590af2a2d5cbd3bc61fcea58f",
+          "execution_bundle_sha256": "9d76bc5ac80a75843886df6a29822f7915408bfe445129c31d39d39caf201a9a",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "956e3742e1586e2c1ab62b43a94f80379e4be02f3d01115d7ca086857b4889be",
@@ -138,10 +138,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "354dc20a3db20229adea148a13aaeede6b3eac2dc31cb530023663cbbf53deef",
+          "execution_bundle_sha256": "c95b98bace951cf1226c0f9d8e00d9e976c9e9f3d5f7aa988e466a5e4ce81e5d",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "77dcc949557145666110e5c8f8133db7d535860e253792a2cb386460422b0931",
@@ -175,10 +175,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "0d9048a49c282a206e20c8e69a281d3e918eca60ecf8b0fd81556b93a368ccc2",
+          "execution_bundle_sha256": "edb360454ba0afc5f9f9bc5f152738b9e48cb40aa97dea63a13293642ca1f64f",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "6e2980ba4e46853abaca1f23b9da5796f06e4b60610cf95c3dbe1e5d91583c13",
@@ -212,10 +212,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "63c68110e413d960fe271bec5fec3ffef86b6b24c6b814ab9abd7977bbcbb0f1",
+          "execution_bundle_sha256": "92f0a4eb479d38326a64e96fd9a3d0eff0d887fae02666b70c98312b4d685702",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "4ab7ec5a413d5fad9531e853903f0960a36c7098e223ce5433b74cc3c625b423",
@@ -249,10 +249,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "ce692c931f10d78d9aef4dd728749efe65d4f018bf5afce33539f30d0fc49533",
+          "execution_bundle_sha256": "b84e938e6a1eaaebe0885ef110d4350d6e78ab49f138d68d0decd1cc2d20535c",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "afbbdb6d0968570030d19101351e2f628dfdb7b1ea1225f1eaf5008a6cdfd4b4",
@@ -286,10 +286,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "ed9a20f71be9b3f0ea524c51d8b7e898390b1540d365c5dd610358beb50ff02a",
+          "execution_bundle_sha256": "4b3cfbd66e647026a0bee3f49cc5f233abdd27832e45e349200154fc9c9332b0",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "a095fbcb2322aacff98edd386b52e7926335c99e345c4289e69be03944d54822",
@@ -323,10 +323,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "211eba86ea168b3a9806f133b64c74c533ad87ff28dc4af2a675fdf38f990124",
+          "execution_bundle_sha256": "fcc3417f9a5c9e84a1657b2e9766ac13b61b82f1c23971fcd77f2479ebd0782e",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "92e6ba700d4111962bc10afe719903ea4b52cf865950825d9745c3c6c8d37439",
@@ -360,10 +360,10 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "3e1bf2fc1b8b300abffb99899a85c453eaa2cf0d05b9deb9921140d7c3dd9b9e",
+          "execution_bundle_sha256": "8406d092763cd7ffae8f0cecb17e2062afc04f602e12a00f70074ca00a2a76ef",
           "production_writes": false,
           "resource_class": "network",
           "source_bundle_sha256": "05df5cf51478258854f75e01f5f014d349e192899b8cff127dab86a798e8b243",
@@ -380,7 +380,7 @@
       "sources": [
         {
           "adapter_repository_path": "adapters/PER/elcomercio.py",
-          "adapter_sha256": "0d0643f771a0cbec2cffb1938ee82799b778916025dfde718cd8922cbd733a44",
+          "adapter_sha256": "e0e5983b71f75383a8853fbe8884c2987a84baf855e4506b530a0b52c2a728ae",
           "end": "2026-09-30",
           "execution_bundle_files": [
             {
@@ -389,7 +389,7 @@
             },
             {
               "repository_path": "adapters/PER/elcomercio.py",
-              "sha256": "0d0643f771a0cbec2cffb1938ee82799b778916025dfde718cd8922cbd733a44"
+              "sha256": "e0e5983b71f75383a8853fbe8884c2987a84baf855e4506b530a0b52c2a728ae"
             },
             {
               "repository_path": "adapters/__init__.py",
@@ -397,13 +397,13 @@
             },
             {
               "repository_path": "adapters/candidate_common.py",
-              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+              "sha256": "376f1f1210a709a291e019cf1f18d7e453c4706ee7f5ad30c2f89e77fcbd8219"
             }
           ],
-          "execution_bundle_sha256": "3db859b5810e7d37c3827db52b5efc029fdc53b7b7b1e6c63a3f00e5e2debfbd",
+          "execution_bundle_sha256": "985822b8b82574719daa5e534f8edf0d38466a937cfffc72342e53f334c4ee86",
           "production_writes": false,
           "resource_class": "network",
-          "source_bundle_sha256": "a8274bd2d88942a98de9cb0a835c4fff0578895b17722ab3996979d1275660b5",
+          "source_bundle_sha256": "e6e3e78e41b77c69a1159541edeb434755b76b4b3138508e3ba00ae68ebf5e34",
           "source_id": "mlp:PER:elcomercio.pe",
           "start": "2026-08-10",
           "timeout_seconds": 10800

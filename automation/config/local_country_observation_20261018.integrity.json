@@ -2,12 +2,12 @@
   "browser_worker_ceiling": 0,
   "campaign_id": "local-country-observation-20261018-through-20260930",
   "capacity_guard_sha256": "2db659d649219a426efbf7747c27c6abbda89ecde4d9241635dd5112d356e18d",
-  "code_git_commit": "3dd2caf11fac10a93aa0ddae490ba08f7f871717",
-  "controller_sha256": "213f033268c1aac0b3474fd50d61fbc4b11071c18edfe5d2febb9eeb21ea6b19",
-  "launcher_sha256": "c8ee108ba5a7351f8465d49fa01cd3bf17e3b1a6811d9a37209810bfe25e813f",
+  "code_git_commit": "d30c371178fff298bf662554cf18ac264a4e9613",
+  "controller_sha256": "3651bb78e73233ec1f20d94db249e6fb837aaeb641d044f64f60155fd36e04ba",
+  "launcher_sha256": "40fe2e15e61e8a79443acd443fc836ddbf166bfe5315177d17c3abcc9b2d38a2",
   "network_worker_ceiling": 4,
   "plan_file": "local_country_observation_20261018.json",
-  "plan_sha256": "04bd5e3e7b32b91a2ee163ecab680d51a8f95ef73fbb3fe5066ca46b62e41c82",
+  "plan_sha256": "68d231051bd0a99d03bdcb30ec7520573fbd3fdc12f42cb8ec06b79134a691e6",
   "production_writes": false,
   "schema_version": 1
 }
