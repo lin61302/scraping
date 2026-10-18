@@ -1,33 +1,6 @@
 {
-  "schema_version": 1,
-  "expected_github_login": "lin61302",
-  "repository": {
-    "remote": "origin",
-    "owner": "lin61302",
-    "name": "scraping",
-    "branch": "main",
-    "upstream": "origin/main"
-  },
-  "limits": {
-    "max_file_bytes": 1048576,
-    "max_files": 100,
-    "max_run_records": 200,
-    "max_sources_per_record": 100,
-    "max_evidence_sha256_per_record": 100
-  },
   "allowed": {
-    "top_level_directories": [
-      "automation",
-      "docs",
-      "env_project",
-      "Remedios",
-      "Roya_project",
-      "scripts",
-      "src",
-      "tests",
-      "tools"
-    ],
-    "root_extensions": [
+    "executable_extensions": [
       ".py",
       ".sh"
     ],
@@ -42,10 +15,6 @@
       ".yaml",
       ".yml"
     ],
-    "executable_extensions": [
-      ".py",
-      ".sh"
-    ],
     "forbidden_components": [
       ".env",
       ".git",
@@ -59,7 +28,30 @@
       "raw",
       "receipts",
       "secrets"
+    ],
+    "root_extensions": [
+      ".py",
+      ".sh"
+    ],
+    "top_level_directories": [
+      "automation",
+      "docs",
+      "env_project",
+      "Remedios",
+      "Roya_project",
+      "scripts",
+      "src",
+      "tests",
+      "tools"
     ]
+  },
+  "expected_github_login": "lin61302",
+  "limits": {
+    "max_evidence_sha256_per_record": 100,
+    "max_file_bytes": 1048576,
+    "max_files": 100,
+    "max_run_records": 200,
+    "max_sources_per_record": 100
   },
   "privacy": {
     "allowed_count_keys": [
@@ -75,16 +67,26 @@
       "timed_out"
     ]
   },
+  "repository": {
+    "branch": "main",
+    "name": "scraping",
+    "owner": "lin61302",
+    "remote": "origin",
+    "upstream": "origin/main"
+  },
+  "schema_version": 1,
   "validation_commands": [
     [
-      "python3",
+      "conda",
+      "run",
+      "--no-capture-output",
+      "-n",
+      "base",
+      "python",
       "-m",
-      "unittest",
-      "discover",
-      "-s",
-      "automation/tests",
-      "-p",
-      "test_*.py"
+      "pytest",
+      "-q",
+      "automation/tests"
     ]
   ]
 }
