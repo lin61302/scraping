@@ -1,0 +1,1 @@
+"""Pure Algeria observation adapters."""

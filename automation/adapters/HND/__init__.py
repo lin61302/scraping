@@ -1,0 +1,1 @@
+"""Honduras pure candidate adapters."""

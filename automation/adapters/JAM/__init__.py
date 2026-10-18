@@ -1,0 +1,1 @@
+"""Pure Jamaica observation adapters."""

@@ -1,0 +1,1 @@
+"""Cambodia candidate adapters."""

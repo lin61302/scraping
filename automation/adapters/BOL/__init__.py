@@ -1,0 +1,1 @@
+"""Bolivia pure observation adapters."""

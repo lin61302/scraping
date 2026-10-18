@@ -1,0 +1,1 @@
+"""Pure Ghana candidate adapters."""

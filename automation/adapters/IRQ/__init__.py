@@ -1,0 +1,1 @@
+"""Pure Iraq candidate adapters."""

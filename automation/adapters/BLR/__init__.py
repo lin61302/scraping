@@ -1,0 +1,1 @@
+"""Belarus pure observation adapters."""
