@@ -1,0 +1,1 @@
+"""Pure Niger observation adapters."""

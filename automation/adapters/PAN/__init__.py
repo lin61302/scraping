@@ -1,0 +1,1 @@
+"""Panama source adapters."""

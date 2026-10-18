@@ -1,0 +1,1 @@
+"""Pure Rwanda candidate adapters."""

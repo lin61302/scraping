@@ -1,0 +1,1 @@
+"""Senegal pure source adapters."""
