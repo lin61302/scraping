@@ -146,6 +146,26 @@ class PrivacyAndManifestTests(unittest.TestCase):
             with self.assertRaises(publisher.PublishError):
                 publisher.prepare_manifest(manifest_path, self.source, self.repo, self.policy)
 
+    def test_browser_user_agent_versions_are_not_treated_as_ip_addresses(self):
+        dotted_version = ".".join(["126", "0", "0", "0"])
+        products = ["Chrome", "Chromium", "Firefox", "Version", "Safari", "AppleWebKit", "Edg", "OPR"]
+        for product in products:
+            content = ("user_agent = '%s/%s'\n" % (product, dotted_version)).encode("utf-8")
+            publisher._validate_text_privacy(
+                content, "browser user-agent", self.policy["limits"]["max_file_bytes"]
+            )
+
+    def test_standalone_and_url_ip_addresses_remain_rejected(self):
+        public_address = ".".join(["203", "0", "113", "7"])
+        loopback_address = ".".join(["127", "0", "0", "1"])
+        address_url = "https" + "://" + public_address + "/article"
+        loopback_url = "http" + "://" + loopback_address + ":8080/service"
+        for content in (public_address, address_url, loopback_url):
+            with self.assertRaisesRegex(publisher.PublishError, "IPv4"):
+                publisher._validate_text_privacy(
+                    content.encode("utf-8"), "address", self.policy["limits"]["max_file_bytes"]
+                )
+
     def test_run_records_are_rebuilt_from_allowlisted_fields(self):
         content = b"print('safe')\n"
         digest = hashlib.sha256(content).hexdigest()
@@ -319,6 +339,10 @@ class GitTransactionTests(unittest.TestCase):
                 self.repo, ["JAM/adapter.py"], "unit", self.policy, self.runner
             )
         self.assertEqual(run_git(self.repo, "diff", "--cached", "--name-only"), "")
+
+    def test_porcelain_leading_space_is_preserved(self):
+        (self.repo / "seed.txt").write_text("changed\n", encoding="utf-8")
+        self.assertEqual(publisher._status_paths(self.repo, self.runner), {"seed.txt"})
 
     def test_dirty_checkout_blocks_unattended_bootstrap(self):
         (self.repo / "unreviewed.py").write_text("print('unreviewed')\n", encoding="utf-8")

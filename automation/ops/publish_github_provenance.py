@@ -42,6 +42,17 @@ COUNTRY_TOP_LEVEL_RE = re.compile(r"^[A-Z]{3}$")
 WINDOWS_HOME_RE = re.compile(r"(?i)\b[A-Z]:\\Users\\[^\\\s]+\\")
 POSIX_HOME_RE = re.compile(r"/(?:Users|home)/[^/\s]+/")
 IPV4_CANDIDATE_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+BROWSER_VERSION_PRODUCTS = (
+    "Chrome",
+    "Chromium",
+    "Firefox",
+    "Version",
+    "Safari",
+    "AppleWebKit",
+    "Edg",
+    "OPR",
+)
+URL_SPAN_RE = re.compile(r"(?i)\b[a-z][a-z0-9+.-]*://[^\s'\"<>]+")
 
 
 class PublishError(RuntimeError):
@@ -89,7 +100,13 @@ class CommandRunner:
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise PublishError("command_execution_failed", "Command execution failed: %s" % exc) from exc
-        result = CommandResult(completed.returncode, completed.stdout.strip(), completed.stderr.strip())
+        # Git porcelain output uses a leading space as the index status.  Keep
+        # leading whitespace intact and remove only line terminators.
+        result = CommandResult(
+            completed.returncode,
+            completed.stdout.rstrip("\r\n"),
+            completed.stderr.rstrip("\r\n"),
+        )
         if check and result.returncode != 0:
             detail = result.stderr or result.stdout or "no command output"
             raise PublishError("command_failed", "%s failed: %s" % (args[0], detail))
@@ -418,10 +435,27 @@ def _validate_text_privacy(content: bytes, context: str, max_bytes: int) -> str:
         port = int(match.group("port"))
         if 1 <= port <= 65535:
             raise PublishError("local_service_detected", "%s contains a localhost service endpoint" % context)
-    for candidate in IPV4_CANDIDATE_RE.findall(text):
+    url_spans = tuple((match.start(), match.end()) for match in URL_SPAN_RE.finditer(text))
+    for candidate_match in IPV4_CANDIDATE_RE.finditer(text):
+        candidate = candidate_match.group(0)
         try:
             address = ipaddress.ip_address(candidate)
         except ValueError:
+            continue
+        in_url = any(start <= candidate_match.start() < end for start, end in url_spans)
+        if in_url:
+            raise PublishError("infrastructure_detected", "%s contains an IPv4 address in a URL" % context)
+        browser_version = False
+        for product in BROWSER_VERSION_PRODUCTS:
+            prefix = product + "/"
+            prefix_start = candidate_match.start() - len(prefix)
+            if prefix_start < 0 or text[prefix_start : candidate_match.start()] != prefix:
+                continue
+            if prefix_start > 0 and (text[prefix_start - 1].isalnum() or text[prefix_start - 1] in "_-"):
+                continue
+            browser_version = True
+            break
+        if browser_version:
             continue
         if not (address.is_loopback or address.is_unspecified):
             raise PublishError("infrastructure_detected", "%s contains a non-loopback IPv4 address" % context)
@@ -766,7 +800,11 @@ def preflight_repository(repo: Path, policy: Mapping[str, Any], runner: CommandR
 
 
 def _status_paths(repo: Path, runner: CommandRunner) -> Set[str]:
-    output = _git_output(repo, runner, ["status", "--porcelain=v1", "--untracked-files=all"])
+    # `_git_output` trims leading whitespace for scalar Git values. Porcelain
+    # status needs that whitespace because it is one of the two status bytes.
+    output = runner.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all"], cwd=repo
+    ).stdout.rstrip("\r\n")
     paths: Set[str] = set()
     if not output:
         return paths
