@@ -1,0 +1,1 @@
+"""Tanzania pure candidate adapters."""

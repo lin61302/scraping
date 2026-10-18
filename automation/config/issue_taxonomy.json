@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "categories": {
+    "discovery": ["sitemap_missing", "sitemap_changed", "pagination_broken", "listing_selector_changed", "source_repurposed", "empty_window", "coverage_unbounded"],
+    "access": ["dns_error", "tls_error", "timeout", "rate_limited", "http_403", "http_5xx", "challenge_page", "captcha", "browser_error"],
+    "url": ["non_article", "unsupported_content_type", "redirect_loop", "canonical_collision", "duplicate_url"],
+    "date": ["date_missing", "date_unparseable", "date_future", "date_out_of_range", "modified_date_selected", "publication_signal_missing", "date_signal_disagreement", "date_concentration"],
+    "title": ["title_missing", "title_too_short", "challenge_title", "template_title", "title_signal_disagreement"],
+    "maintext": ["maintext_missing", "maintext_too_short", "boilerplate_heavy", "wrong_container", "duplicate_text", "language_mismatch"],
+    "volume": ["zero_yield", "unexpected_drop", "unexpected_spike", "parse_yield_shift", "historical_gap"],
+    "infrastructure": ["database_error", "disk_pressure", "dependency_error", "driver_mismatch", "credential_error", "worker_lost"]
+  },
+  "blocking_severities": ["error", "critical"]
+}
