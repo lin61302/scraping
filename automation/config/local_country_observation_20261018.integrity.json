@@ -1,0 +1,13 @@
+{
+  "browser_worker_ceiling": 0,
+  "campaign_id": "local-country-observation-20261018-through-20260930",
+  "capacity_guard_sha256": "d9653ead6f04a5182ada747e66bdadc42d0a8170cc428c36c1d9c58f44bf90ee",
+  "code_git_commit": "d7c20f5443af004e609daab4e8baadc7681e5b01",
+  "controller_sha256": "213f033268c1aac0b3474fd50d61fbc4b11071c18edfe5d2febb9eeb21ea6b19",
+  "launcher_sha256": "c8ee108ba5a7351f8465d49fa01cd3bf17e3b1a6811d9a37209810bfe25e813f",
+  "network_worker_ceiling": 4,
+  "plan_file": "local_country_observation_20261018.json",
+  "plan_sha256": "391df03e4ceddb00f8ee6a976a66d937c34bc043f94cbbb815584dcb910c870d",
+  "production_writes": false,
+  "schema_version": 1
+}

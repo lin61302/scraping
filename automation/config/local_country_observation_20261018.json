@@ -1,0 +1,415 @@
+{
+  "campaign_id": "local-country-observation-20261018-through-20260930",
+  "code_git_commit": "d7c20f5443af004e609daab4e8baadc7681e5b01",
+  "concurrency": {
+    "browser": 0,
+    "max_active_country_sessions": 4,
+    "network": 4
+  },
+  "first_pass_target_end": "2026-09-30",
+  "immutable": true,
+  "max_wall_seconds": 43200,
+  "mode": "pure_observation_only",
+  "observer": {
+    "execution_bundle_files": [
+      {
+        "repository_path": "scraper_control/evidence.py",
+        "sha256": "b8f915a24854b396c851a3951cb71c5992d9f959b3e7d5817fc73bef918ca283"
+      },
+      {
+        "repository_path": "scraper_control/observe.py",
+        "sha256": "51d41601625b6bc70a33426173f702031b3ccc5c44d75f8d78e50beb7b7c90de"
+      },
+      {
+        "repository_path": "scraper_control/thesun_five.py",
+        "sha256": "a00aff18b0970f17540d6bf2c3319b710fc1030dc668f1d95ed53f08b2db761a"
+      },
+      {
+        "repository_path": "scraper_control/validation.py",
+        "sha256": "6607916e7fd8353bc6c53a92534a745f9668bd09226d35ca5111b071eaac907a"
+      },
+      {
+        "repository_path": "scripts/parallel_observe_pure.py",
+        "sha256": "4ce60e5e77aeb9d0facb5aed165707cf7452144e0f92a1f17a8b4654958ff363"
+      }
+    ],
+    "execution_bundle_sha256": "75b5a7bd5962536448d3549ab35803580db510697aaf05a50daab61fb8f69af3",
+    "repository_path": "scripts/parallel_observe_pure.py",
+    "sha256": "4ce60e5e77aeb9d0facb5aed165707cf7452144e0f92a1f17a8b4654958ff363"
+  },
+  "production_writes": false,
+  "schema_version": 1,
+  "sessions": [
+    {
+      "country": "LBR",
+      "execution": "sequential_sources",
+      "session_id": "country-lbr-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/LBR/liberianinvestigator.py",
+          "adapter_sha256": "6302ec7013b398ff0041e2b7f181184dafb46ca56f48e4696c0f60618ec913c9",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/LBR/liberianinvestigator.py",
+              "sha256": "6302ec7013b398ff0041e2b7f181184dafb46ca56f48e4696c0f60618ec913c9"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "0e57e2248a0b43345d1799ea2b7d6c8905ae53d236f6c58949a330aeb0614488",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "cf9c0c6fc4288525ee7d3ec2008d0275f165ba7ed3027f786143c6de5e9879f3",
+          "source_id": "mlp:LBR:liberianinvestigator.com",
+          "start": "2026-07-22",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "MWI",
+      "execution": "sequential_sources",
+      "session_id": "country-mwi-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/MWI/malawi247.py",
+          "adapter_sha256": "bfa5eff9be3cd22e206a501fba0881cb220426005123b45b0d5315cbe780508d",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/MWI/malawi247.py",
+              "sha256": "bfa5eff9be3cd22e206a501fba0881cb220426005123b45b0d5315cbe780508d"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "d0cc22a32217ebbf110498a8dec86acdacc4412590af2a2d5cbd3bc61fcea58f",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "956e3742e1586e2c1ab62b43a94f80379e4be02f3d01115d7ca086857b4889be",
+          "source_id": "mlp:MWI:247malawi.com",
+          "start": "2026-07-16",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "PAN",
+      "execution": "sequential_sources",
+      "session_id": "country-pan-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/PAN/newsroompanama.py",
+          "adapter_sha256": "5f9be266db2ef759d2483e25a14b855c9a284410076e1de64382bd8109c260f7",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/PAN/newsroompanama.py",
+              "sha256": "5f9be266db2ef759d2483e25a14b855c9a284410076e1de64382bd8109c260f7"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "354dc20a3db20229adea148a13aaeede6b3eac2dc31cb530023663cbbf53deef",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "77dcc949557145666110e5c8f8133db7d535860e253792a2cb386460422b0931",
+          "source_id": "mlp:PAN:newsroompanama.com",
+          "start": "2026-07-21",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "SLB",
+      "execution": "sequential_sources",
+      "session_id": "country-slb-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/SLB/sibconline.py",
+          "adapter_sha256": "c4fc8ca76009c00e1af5f5fd8f04242fe847e60f19a7d608c522c97ae2ab26b0",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/SLB/sibconline.py",
+              "sha256": "c4fc8ca76009c00e1af5f5fd8f04242fe847e60f19a7d608c522c97ae2ab26b0"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "0d9048a49c282a206e20c8e69a281d3e918eca60ecf8b0fd81556b93a368ccc2",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "6e2980ba4e46853abaca1f23b9da5796f06e4b60610cf95c3dbe1e5d91583c13",
+          "source_id": "mlp:SLB:sibconline.com.sb",
+          "start": "2026-07-29",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "SSD",
+      "execution": "sequential_sources",
+      "session_id": "country-ssd-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/SSD/eyeradio.py",
+          "adapter_sha256": "066acdce584cad2ea31f1dcb22cfa953a236f30bc9ee6592ed85bc0a48622f5d",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/SSD/eyeradio.py",
+              "sha256": "066acdce584cad2ea31f1dcb22cfa953a236f30bc9ee6592ed85bc0a48622f5d"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "63c68110e413d960fe271bec5fec3ffef86b6b24c6b814ab9abd7977bbcbb0f1",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "4ab7ec5a413d5fad9531e853903f0960a36c7098e223ce5433b74cc3c625b423",
+          "source_id": "mlp:SSD:eyeradio.org",
+          "start": "2026-08-10",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "UGA",
+      "execution": "sequential_sources",
+      "session_id": "country-uga-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/UGA/eagle.py",
+          "adapter_sha256": "7f5063fbe54cdd485c37e5632b67b5f24c317d2f9e833e152779e1e59f796bdb",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/UGA/eagle.py",
+              "sha256": "7f5063fbe54cdd485c37e5632b67b5f24c317d2f9e833e152779e1e59f796bdb"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "ce692c931f10d78d9aef4dd728749efe65d4f018bf5afce33539f30d0fc49533",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "afbbdb6d0968570030d19101351e2f628dfdb7b1ea1225f1eaf5008a6cdfd4b4",
+          "source_id": "mlp:UGA:eagle.co.ug",
+          "start": "2026-08-10",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "COD",
+      "execution": "sequential_sources",
+      "session_id": "country-cod-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/COD/sevensurseven.py",
+          "adapter_sha256": "65ecd37e321904b63528756ba79eee207cf7d6f301bc75e62566b9aaa725ab46",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/COD/sevensurseven.py",
+              "sha256": "65ecd37e321904b63528756ba79eee207cf7d6f301bc75e62566b9aaa725ab46"
+            },
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "ed9a20f71be9b3f0ea524c51d8b7e898390b1540d365c5dd610358beb50ff02a",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "a095fbcb2322aacff98edd386b52e7926335c99e345c4289e69be03944d54822",
+          "source_id": "mlp:COD:7sur7.cd",
+          "start": "2026-08-12",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "ECU",
+      "execution": "sequential_sources",
+      "session_id": "country-ecu-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/ECU/eluniverso.py",
+          "adapter_sha256": "a4b630c803e7133a744474cd2c34fa279c288c77f1a568ee6ec907dad2e62adb",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/ECU/eluniverso.py",
+              "sha256": "a4b630c803e7133a744474cd2c34fa279c288c77f1a568ee6ec907dad2e62adb"
+            },
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "211eba86ea168b3a9806f133b64c74c533ad87ff28dc4af2a675fdf38f990124",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "92e6ba700d4111962bc10afe719903ea4b52cf865950825d9745c3c6c8d37439",
+          "source_id": "mlp:ECU:eluniverso.com",
+          "start": "2026-06-29",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "NGA",
+      "execution": "sequential_sources",
+      "session_id": "country-nga-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/NGA/guardian.py",
+          "adapter_sha256": "ee3e0a36aea4623cba5a84ccd100b66edc534864206483187169accd2d8e57df",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/NGA/guardian.py",
+              "sha256": "ee3e0a36aea4623cba5a84ccd100b66edc534864206483187169accd2d8e57df"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "3e1bf2fc1b8b300abffb99899a85c453eaa2cf0d05b9deb9921140d7c3dd9b9e",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "05df5cf51478258854f75e01f5f014d349e192899b8cff127dab86a798e8b243",
+          "source_id": "mlp:NGA:guardian.ng",
+          "start": "2026-08-14",
+          "timeout_seconds": 10800
+        }
+      ]
+    },
+    {
+      "country": "PER",
+      "execution": "sequential_sources",
+      "session_id": "country-per-20261018",
+      "sources": [
+        {
+          "adapter_repository_path": "adapters/PER/elcomercio.py",
+          "adapter_sha256": "0d0643f771a0cbec2cffb1938ee82799b778916025dfde718cd8922cbd733a44",
+          "end": "2026-09-30",
+          "execution_bundle_files": [
+            {
+              "repository_path": "adapters/INT/common.py",
+              "sha256": "a13af2be540ffafbe08f0e7cef3f867c3cb262395fce123df4c8e0a533c4cb12"
+            },
+            {
+              "repository_path": "adapters/PER/elcomercio.py",
+              "sha256": "0d0643f771a0cbec2cffb1938ee82799b778916025dfde718cd8922cbd733a44"
+            },
+            {
+              "repository_path": "adapters/__init__.py",
+              "sha256": "e60a454e67bd0f661b097ca073728d046b18f91b8489211ecabe0126547baf5d"
+            },
+            {
+              "repository_path": "adapters/candidate_common.py",
+              "sha256": "4d41379c135292bf4dcd54189044c8105e4801833ba12c2783a9fad0605a69f2"
+            }
+          ],
+          "execution_bundle_sha256": "3db859b5810e7d37c3827db52b5efc029fdc53b7b7b1e6c63a3f00e5e2debfbd",
+          "production_writes": false,
+          "resource_class": "network",
+          "source_bundle_sha256": "a8274bd2d88942a98de9cb0a835c4fff0578895b17722ab3996979d1275660b5",
+          "source_id": "mlp:PER:elcomercio.pe",
+          "start": "2026-08-10",
+          "timeout_seconds": 10800
+        }
+      ]
+    }
+  ],
+  "source_count": 10
+}
