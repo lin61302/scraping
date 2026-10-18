@@ -14,7 +14,10 @@ class Config:
     source_name = "elcomercio.pe"
     country_code = "PER"
     is_env = False
-    browser_worker = True
+    # This bounded adapter fetches exact daily archive and article URLs over
+    # HTTP.  Browser completeness remains an unresolved production gate, but
+    # the observation itself never starts or requires a browser process.
+    browser_worker = False
     access_block_circuit_threshold = 1
     production_writes = False
     launch_ready = False
@@ -99,7 +102,7 @@ def _require_live_gates(evidence: dict | None = None) -> None:
             )
         return
     if evidence is not None:
-        evidence.update({"mode": "blocked_prelaunch_no_production_writes", "method": "reviewed_daily_archive_candidate_pending_intervening_day_and_browser_completeness_policy_peer_review", "accept_start": ACCEPT_START.isoformat(), "archive_template": ARCHIVE_TEMPLATE, "browser_worker": True, **_gates(), "coverage_complete": False, "first_pass_verified_through": None, "strict_verified_through": None, "production_writes": False})
+        evidence.update({"mode": "blocked_prelaunch_no_production_writes", "method": "reviewed_daily_archive_candidate_pending_intervening_day_and_browser_completeness_policy_peer_review", "accept_start": ACCEPT_START.isoformat(), "archive_template": ARCHIVE_TEMPLATE, "browser_worker": False, **_gates(), "coverage_complete": False, "first_pass_verified_through": None, "strict_verified_through": None, "production_writes": False})
     raise RouteProfileUnverifiedError("El Comercio live observation remains fail-closed")
 
 
@@ -141,7 +144,7 @@ def discover_urls(start: date, end: date, evidence: dict) -> list[str]:
         receipts.append({"day": day.isoformat(), "url": route, "status": response.status_code, "bytes": len(response.content), "sha256": common.sha256(response.content), "rows": len(rows)})
         day += timedelta(days=1)
     result = sorted(urls)
-    evidence.update({"mode": "pure_observation_no_production_writes", "method": "reviewed_exact_daily_archive_pages_with_article_page_date_validation", "browser_worker": True, "days": receipts, "robots_sha256": common.sha256(robots_response.content), "selected": len(result), "selected_url_set_sha256": common.url_set_sha256(result), "coverage_complete": True, "first_pass_verified_through": None, "strict_verified_through": None, "production_writes": False})
+    evidence.update({"mode": "pure_observation_no_production_writes", "method": "reviewed_exact_daily_archive_pages_with_article_page_date_validation", "browser_worker": False, "days": receipts, "robots_sha256": common.sha256(robots_response.content), "selected": len(result), "selected_url_set_sha256": common.url_set_sha256(result), "bounded_route_requests_complete": True, "coverage_complete": False, "first_pass_verified_through": None, "strict_verified_through": None, "production_writes": False})
     return result
 
 

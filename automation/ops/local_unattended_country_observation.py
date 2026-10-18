@@ -52,6 +52,13 @@ FORBIDDEN_CALLS = frozenset({
 })
 BROWSER_IMPORTS = frozenset({"selenium", "playwright"})
 SOURCE_TERMINAL = "terminal_receipt.json"
+OBSERVER_LOG_MAX_BYTES = 50 * 1024 * 1024
+CHILD_ENV_ALLOWLIST = frozenset({
+    "PATH", "HOME", "TMPDIR", "LANG", "LC_ALL",
+    "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE",
+    "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY",
+    "http_proxy", "https_proxy", "no_proxy",
+})
 
 
 class PlanError(ValueError):
@@ -192,6 +199,63 @@ def _syntax_tree(path: Path) -> ast.Module:
         return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     except (OSError, SyntaxError, UnicodeDecodeError) as exc:
         raise PlanError(f"cannot parse Python file {path}: {exc}") from exc
+
+
+def _static_date_call(value: ast.expr, path: Path, name: str) -> date:
+    """Parse a literal ``date(year, month, day)`` call without importing code."""
+
+    if (
+        not isinstance(value, ast.Call)
+        or not isinstance(value.func, ast.Name)
+        or value.func.id != "date"
+        or value.keywords
+        or len(value.args) != 3
+    ):
+        raise PlanError(f"{path} {name} must be a literal date(year, month, day) call")
+    parts: list[int] = []
+    for argument in value.args:
+        if (
+            not isinstance(argument, ast.Constant)
+            or isinstance(argument.value, bool)
+            or not isinstance(argument.value, int)
+        ):
+            raise PlanError(f"{path} {name} must use literal integer date parts")
+        parts.append(argument.value)
+    try:
+        return date(*parts)
+    except ValueError as exc:
+        raise PlanError(f"{path} {name} is not a valid date") from exc
+
+
+def _adapter_observation_window(path: Path) -> tuple[date, date]:
+    """Read the adapter's top-level immutable observation window statically."""
+
+    required = {"ACCEPT_START", "FIRST_PASS_TARGET"}
+    values: dict[str, date] = {}
+    for statement in _syntax_tree(path).body:
+        if isinstance(statement, ast.Assign):
+            targets = statement.targets
+            value = statement.value
+        elif isinstance(statement, ast.AnnAssign):
+            targets = [statement.target]
+            value = statement.value
+        else:
+            continue
+        names = {
+            target.id
+            for target in targets
+            if isinstance(target, ast.Name) and target.id in required
+        }
+        for name in names:
+            if name in values:
+                raise PlanError(f"{path} has multiple top-level assignments for {name}")
+            if value is None:
+                raise PlanError(f"{path} {name} must have a value")
+            values[name] = _static_date_call(value, path, name)
+    missing = sorted(required - values.keys())
+    if missing:
+        raise PlanError(f"{path} lacks top-level date assignment(s): {', '.join(missing)}")
+    return values["ACCEPT_START"], values["FIRST_PASS_TARGET"]
 
 
 def _module_path(module: str, automation_root: Path) -> Optional[Path]:
@@ -373,7 +437,10 @@ def host_capacity_report(runtime: RuntimePaths) -> dict[str, object]:
             "parallel_observe_pure.py",
             "local_unattended_country_observation.py",
         ),
-        browser_patterns=("chromedriver", "geckodriver", "playwright run-driver"),
+        browser_patterns=(
+            "chromedriver", "geckodriver", "playwright", "--headless",
+            "--remote-debugging-port", "selenium",
+        ),
     )
     return evaluate_capacity(metrics)
 
@@ -413,6 +480,31 @@ def _verify_bundle(
     if actual != digest:
         raise PlanError(f"{field} aggregate hash mismatch")
     return digest
+
+
+def _verify_execution_pins(
+    plan: CampaignPlan, source: SourceSpec, automation_root: Path,
+) -> None:
+    """Recheck every executable pin at the child process boundary."""
+
+    if not plan.observer.is_file() or sha256_path(plan.observer) != plan.observer_sha256:
+        raise PlanError(f"observer hash drifted: {plan.observer}")
+    _verify_bundle(
+        plan.observer_execution_files,
+        plan.observer_execution_bundle_sha256,
+        automation_root,
+        "observer.execution_bundle",
+    )
+    if not source.adapter.is_file() or sha256_path(source.adapter) != source.adapter_sha256:
+        raise PlanError(f"source adapter hash drifted: {source.adapter}")
+    if adapter_bundle_sha256(source.adapter) != source.source_bundle_sha256:
+        raise PlanError(f"source adapter bundle hash drifted: {source.adapter}")
+    _verify_bundle(
+        source.execution_files,
+        source.execution_bundle_sha256,
+        automation_root,
+        f"source {source.source_id} execution_bundle",
+    )
 
 
 def _require_closure_in_bundle(
@@ -463,6 +555,13 @@ def _parse_source(
     end = _parse_date(raw.get("end"), f"{label}.end")
     if not start <= end or end != target_end:
         raise PlanError(f"{label} requires start <= end and end equal to target")
+    adapter_start, adapter_end = _adapter_observation_window(adapter)
+    if start != adapter_start or end != adapter_end:
+        raise PlanError(
+            f"{label} plan window {start.isoformat()}..{end.isoformat()} does not match "
+            f"adapter ACCEPT_START/FIRST_PASS_TARGET "
+            f"{adapter_start.isoformat()}..{adapter_end.isoformat()}"
+        )
     files = _parse_pinned_files(raw.get("execution_bundle_files"), automation_root, f"{label}.execution_bundle_files")
     bundle_hash = _verify_bundle(
         files, raw.get("execution_bundle_sha256"), automation_root,
@@ -655,21 +754,72 @@ class PureObserverExecutor:
         before = {path.resolve() for path in output_root.glob("observe-parallel-*") if path.is_dir()}
         log_path = source_dir / "observer.log"
         command = build_observer_command(self.runtime, self.plan, source, output_root)
-        env = os.environ.copy()
-        pythonpath = [str(self.runtime.automation_root)]
-        if env.get("PYTHONPATH"):
-            pythonpath.append(env["PYTHONPATH"])
-        env["PYTHONPATH"] = os.pathsep.join(pythonpath)
+        env = {
+            key: value for key, value in os.environ.items()
+            if key in CHILD_ENV_ALLOWLIST
+        }
+        env["PYTHONPATH"] = str(self.runtime.automation_root)
         # Candidate adapters fail closed unless the reviewed bounded controller
         # explicitly opts them into network observation.  Never inherit a
         # caller supplied value here: this is the one authorized launch path.
         env["SCRAPER_BOUNDED_OBSERVATION"] = "1"
+        pin_verification: dict[str, object] = {}
+        details: dict[str, object] = {
+            "runner_exit_code": None,
+            "timed_out": False,
+            "command_contract": {
+                "observer_sha256": self.plan.observer_sha256,
+                "workers": 1,
+                "bounded_observation_environment": {"SCRAPER_BOUNDED_OBSERVATION": "1"},
+                "production_writes": False,
+            },
+            "execution_pin_verification": pin_verification,
+        }
+        try:
+            _verify_execution_pins(self.plan, source, self.runtime.automation_root)
+        except (OSError, PlanError) as exc:
+            pin_verification["before_run"] = {
+                "passed": False, "checked_at_utc": iso_now(),
+                "error": str(exc)[:500],
+            }
+            details["contract_error"] = "execution_pin_verification_failed_before_run"
+            return ExecutionResult("isolated_source_failure", details)
+        pin_verification["before_run"] = {"passed": True, "checked_at_utc": iso_now()}
+
         timed_out = False
-        with log_path.open("x", encoding="utf-8") as stream:
+        log_counts = {"bytes_seen": 0, "bytes_kept": 0}
+        drain_errors: list[str] = []
+        with log_path.open("xb") as stream:
             process = subprocess.Popen(
                 command, cwd=str(self.runtime.automation_root.parent), env=env,
-                stdout=stream, stderr=subprocess.STDOUT, start_new_session=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True,
             )
+            if process.stdout is None:  # pragma: no cover - PIPE guarantees this
+                raise RuntimeError("observer stdout pipe was not created")
+
+            def drain_stdout() -> None:
+                try:
+                    while True:
+                        chunk = process.stdout.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        log_counts["bytes_seen"] += len(chunk)
+                        remaining = OBSERVER_LOG_MAX_BYTES - log_counts["bytes_kept"]
+                        if remaining > 0:
+                            kept = chunk[:remaining]
+                            stream.write(kept)
+                            log_counts["bytes_kept"] += len(kept)
+                except Exception as exc:  # preserve a terminal receipt for I/O failures
+                    drain_errors.append(f"{type(exc).__name__}:{str(exc)[:300]}")
+                finally:
+                    process.stdout.close()
+
+            drain_thread = threading.Thread(
+                target=drain_stdout,
+                name=f"observer-log-{_safe_name(source.source_id)[:32]}",
+                daemon=True,
+            )
+            drain_thread.start()
             timeout = max(0.1, min(source.timeout_seconds, deadline - time.monotonic()))
             try:
                 returncode = process.wait(timeout=timeout)
@@ -677,19 +827,34 @@ class PureObserverExecutor:
                 timed_out = True
                 terminate_process_group(process)
                 returncode = process.returncode
+            drain_thread.join()
             stream.flush()
             os.fsync(stream.fileno())
-        details: dict[str, object] = {
-            "runner_exit_code": returncode,
-            "timed_out": timed_out,
-            "command_contract": {
-                "observer_sha256": self.plan.observer_sha256,
-                "workers": 1,
-                "bounded_observation_environment": {"SCRAPER_BOUNDED_OBSERVATION": "1"},
-                "production_writes": False,
-            },
-            "observer_log": {"path": str(log_path), "sha256": sha256_path(log_path)},
+
+        details["runner_exit_code"] = returncode
+        details["timed_out"] = timed_out
+        details["observer_log"] = {
+            "path": str(log_path), "sha256": sha256_path(log_path),
+            "max_bytes": OBSERVER_LOG_MAX_BYTES,
+            "bytes_seen": log_counts["bytes_seen"],
+            "bytes_kept": log_counts["bytes_kept"],
+            "bytes_truncated": log_counts["bytes_seen"] - log_counts["bytes_kept"],
         }
+        if drain_errors:
+            details["observer_log"]["drain_errors"] = drain_errors
+        try:
+            _verify_execution_pins(self.plan, source, self.runtime.automation_root)
+        except (OSError, PlanError) as exc:
+            pin_verification["after_run"] = {
+                "passed": False, "checked_at_utc": iso_now(),
+                "error": str(exc)[:500],
+            }
+            details["contract_error"] = "execution_pin_verification_failed_after_run"
+            return ExecutionResult("isolated_source_failure", details)
+        pin_verification["after_run"] = {"passed": True, "checked_at_utc": iso_now()}
+        if drain_errors:
+            details["contract_error"] = "observer_log_drain_failed"
+            return ExecutionResult("isolated_source_failure", details)
         if timed_out:
             return ExecutionResult("isolated_source_timeout", details)
         after = {path.resolve() for path in output_root.glob("observe-parallel-*") if path.is_dir()}
@@ -748,7 +913,7 @@ class CampaignController:
         self.deadline = 0.0
         self._event_lock = threading.Lock()
         self._capacity_condition = threading.Condition()
-        self._active_sessions = 0
+        self._active_sources = 0
 
     def _event(self, kind: str, **values: object) -> None:
         payload = json.dumps(
@@ -878,8 +1043,8 @@ class CampaignController:
         return receipt
 
     @contextmanager
-    def _session_capacity_slot(self) -> Iterator[tuple[bool, Mapping[str, object]]]:
-        """Admit one country at the shared guard's current network limit."""
+    def _source_capacity_slot(self) -> Iterator[tuple[bool, Mapping[str, object]]]:
+        """Recheck capacity and admit one source at the current network limit."""
 
         admitted = False
         report: Mapping[str, object] = {}
@@ -895,8 +1060,8 @@ class CampaignController:
                 if status == "blocked" or report.get("launch_allowed") is not True or recommended < 1:
                     break
                 limit = min(self.runtime.network_sessions, recommended)
-                if self._active_sessions < limit:
-                    self._active_sessions += 1
+                if self._active_sources < limit:
+                    self._active_sources += 1
                     admitted = True
                     break
                 self._capacity_condition.wait(timeout=5)
@@ -905,7 +1070,7 @@ class CampaignController:
         finally:
             if admitted:
                 with self._capacity_condition:
-                    self._active_sessions -= 1
+                    self._active_sources -= 1
                     self._capacity_condition.notify_all()
 
     def _deadline_result(self, source: SourceSpec, source_dir: Path) -> dict[str, object]:
@@ -975,14 +1140,13 @@ class CampaignController:
         terminal = directory / SOURCE_TERMINAL
         if terminal.exists():
             return _load_object(terminal)
-        with self._session_capacity_slot() as (admitted, capacity):
-            if admitted:
-                receipts = [self._run_source(session, source) for source in session.sources]
-            else:
-                receipts = [
-                    self._capacity_blocked_result(session, source, capacity)
-                    for source in session.sources
-                ]
+        receipts: list[dict[str, object]] = []
+        for source in session.sources:
+            with self._source_capacity_slot() as (admitted, capacity):
+                if admitted:
+                    receipts.append(self._run_source(session, source))
+                else:
+                    receipts.append(self._capacity_blocked_result(session, source, capacity))
         states = [str(item.get("state")) for item in receipts]
         result = {
             "schema_version": 1, "campaign_id": self.plan.campaign_id,
@@ -1050,6 +1214,13 @@ class CampaignController:
                             "session_id": session.session_id, "country": session.country,
                             "status": "isolated_session_failure", "error": type(exc).__name__,
                         })
+            try:
+                terminal_capacity_report = dict(self.capacity_reporter())
+            except Exception as exc:
+                terminal_capacity_report = {
+                    "status": "unavailable", "launch_allowed": False,
+                    "error": f"{type(exc).__name__}:{str(exc)[:300]}",
+                }
             states = [
                 state
                 for session in sessions
@@ -1075,6 +1246,7 @@ class CampaignController:
                 "plan_sha256": self.plan.plan_sha256, "production_writes": False,
                 "verified_completion": False,
                 "completion_semantics": "observation evidence only; no tracker boundary advanced",
+                "terminal_capacity_report": terminal_capacity_report,
                 "counts": {
                     "sessions": len(sessions), "sources": len(states),
                     "isolated_failures": failed, "observed_with_shortfalls": shortfalls,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 import tempfile
 import threading
@@ -20,6 +21,7 @@ if str(AUTOMATION) not in sys.path:
     sys.path.insert(0, str(AUTOMATION))
 
 from ops import launch_local_country_observation_once as launcher  # noqa: E402
+from ops import local_unattended_country_observation as controller  # noqa: E402
 from ops.local_unattended_country_observation import (  # noqa: E402
     CampaignController,
     ExecutionResult,
@@ -58,12 +60,17 @@ if os.environ.get("SCRAPER_BOUNDED_OBSERVATION") != "1":
     raise SystemExit(41)
 source = Path(a.source_file)
 text = source.read_text()
+if "LOUD = True" in text:
+    sys.stdout.buffer.write(b"x" * 100_000)
+    sys.stdout.buffer.flush()
 if "SPAWN_AND_SLEEP = True" in text:
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     (Path(a.output_root) / "child.pid").write_text(str(child.pid))
     time.sleep(60)
 if "FAIL = True" in text:
     raise SystemExit(42)
+if "MUTATE_DURING_RUN = True" in text:
+    source.write_text(text + "\n# mutated by observer\n")
 run = Path(a.output_root) / ("observe-parallel-test-" + uuid.uuid4().hex[:8])
 run.mkdir(parents=True)
 source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
@@ -85,7 +92,12 @@ manifest = {
 
 
 def adapter_text(domain: str, country: str, extra: str = "") -> str:
-    return f'''class Config:
+    return f'''from datetime import date
+
+FETCH_START = ACCEPT_START = date(2026, 8, 1)
+FIRST_PASS_TARGET = date(2026, 9, 30)
+
+class Config:
     source_name = "{domain}"
     country_code = "{country}"
     is_env = False
@@ -196,6 +208,24 @@ def green_report(network: int = 4) -> dict[str, object]:
     }
 
 
+def test_capacity_report_uses_automation_browser_markers_only():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        metrics = {"fixture": True}
+        expected = green_report(4)
+        with (
+            patch.object(controller, "collect_metrics", return_value=metrics) as collect,
+            patch.object(controller, "evaluate_capacity", return_value=expected),
+        ):
+            assert controller.host_capacity_report(fixture.runtime) == expected
+        patterns = collect.call_args.kwargs["browser_patterns"]
+        assert patterns == (
+            "chromedriver", "geckodriver", "playwright", "--headless",
+            "--remote-debugging-port", "selenium",
+        )
+        assert "Google Chrome" not in patterns
+
+
 def test_external_dependency_check_ignores_local_relative_imports_and_unreachable_legacy_core():
     with tempfile.TemporaryDirectory() as directory:
         automation = Path(directory) / "automation"
@@ -241,6 +271,16 @@ def test_plan_requires_exact_ten_country_network_only_contract():
             load_plan(path, "0" * 64, fixture.auto)
 
 
+def test_plan_window_must_match_static_adapter_dates():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        payload = json.loads(json.dumps(fixture.payload))
+        payload["sessions"][0]["sources"][0]["start"] = "2026-08-02"
+        path, digest = fixture.write_plan(payload)
+        with pytest.raises(PlanError, match="ACCEPT_START/FIRST_PASS_TARGET"):
+            load_plan(path, digest, fixture.auto)
+
+
 def test_observer_command_and_environment_are_bounded_and_write_disabled():
     with tempfile.TemporaryDirectory() as directory:
         fixture = Fixture(Path(directory))
@@ -260,6 +300,94 @@ def test_observer_command_and_environment_are_bounded_and_write_disabled():
         assert result.details["command_contract"]["bounded_observation_environment"] == {
             "SCRAPER_BOUNDED_OBSERVATION": "1"
         }
+
+
+def test_child_environment_is_allowlisted_and_excludes_credentials():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        _, _, plan = fixture.plan()
+        source = plan.sessions[0].sources[0]
+        source_dir = fixture.root / "source-receipt"
+        source_dir.mkdir()
+        captured: dict[str, str] = {}
+        real_popen = controller.subprocess.Popen
+
+        def popen(*args, **kwargs):
+            captured.update(kwargs["env"])
+            return real_popen(*args, **kwargs)
+
+        with (
+            patch.dict(os.environ, {
+                "DATABASE_URL": "must-not-pass",
+                "OPENAI_API_KEY": "must-not-pass",
+                "HTTPS_PROXY": "http://proxy.example:8080",
+                "PYTHONPATH": "/unreviewed/path",
+            }),
+            patch.object(controller.subprocess, "Popen", side_effect=popen),
+        ):
+            result = PureObserverExecutor(fixture.runtime, plan)(
+                source, source_dir, time.monotonic() + 10,
+            )
+        assert result.state == "observed_terminal"
+        assert captured["HTTPS_PROXY"] == "http://proxy.example:8080"
+        assert captured["PYTHONPATH"] == str(fixture.auto)
+        assert captured["SCRAPER_BOUNDED_OBSERVATION"] == "1"
+        assert "DATABASE_URL" not in captured
+        assert "OPENAI_API_KEY" not in captured
+
+
+def test_observer_log_is_capped_while_all_output_is_drained():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory), first_extra="LOUD = True")
+        _, _, plan = fixture.plan()
+        source = plan.sessions[0].sources[0]
+        source_dir = fixture.root / "source-receipt"
+        source_dir.mkdir()
+        with patch.object(controller, "OBSERVER_LOG_MAX_BYTES", 1024):
+            result = PureObserverExecutor(fixture.runtime, plan)(
+                source, source_dir, time.monotonic() + 10,
+            )
+        log = result.details["observer_log"]
+        assert result.state == "observed_terminal"
+        assert log["max_bytes"] == 1024
+        assert log["bytes_seen"] == 100_000
+        assert log["bytes_kept"] == 1024
+        assert log["bytes_truncated"] == 100_000 - 1024
+        assert Path(log["path"]).stat().st_size == 1024
+
+
+def test_execution_pin_drift_fails_before_spawning_child():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        _, _, plan = fixture.plan()
+        source = plan.sessions[0].sources[0]
+        source.adapter.write_text(source.adapter.read_text() + "\n# drift\n", encoding="utf-8")
+        source_dir = fixture.root / "source-receipt"
+        source_dir.mkdir()
+        with patch.object(controller.subprocess, "Popen") as popen:
+            result = PureObserverExecutor(fixture.runtime, plan)(
+                source, source_dir, time.monotonic() + 10,
+            )
+        popen.assert_not_called()
+        assert result.state == "isolated_source_failure"
+        assert result.details["contract_error"] == "execution_pin_verification_failed_before_run"
+        assert result.details["execution_pin_verification"]["before_run"]["passed"] is False
+
+
+def test_execution_pins_are_rechecked_after_child_exits():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory), first_extra="MUTATE_DURING_RUN = True")
+        _, _, plan = fixture.plan()
+        source = plan.sessions[0].sources[0]
+        source_dir = fixture.root / "source-receipt"
+        source_dir.mkdir()
+        result = PureObserverExecutor(fixture.runtime, plan)(
+            source, source_dir, time.monotonic() + 10,
+        )
+        assert result.state == "isolated_source_failure"
+        assert result.details["contract_error"] == "execution_pin_verification_failed_after_run"
+        assert result.details["execution_pin_verification"]["before_run"]["passed"] is True
+        assert result.details["execution_pin_verification"]["after_run"]["passed"] is False
 
 
 def test_timeout_kills_observer_process_group_and_isolates_source():
@@ -285,6 +413,7 @@ def test_four_country_sessions_run_concurrently_and_sources_stay_sequential():
         active = 0
         peak = 0
         periods: dict[str, tuple[float, float]] = {}
+        capacity_checks: list[int] = []
 
         def execute(source, source_dir, deadline):
             nonlocal active, peak
@@ -301,9 +430,15 @@ def test_four_country_sessions_run_concurrently_and_sources_stay_sequential():
                 return ExecutionResult("isolated_source_failure", {"fixture": True})
             return ExecutionResult("observed_terminal", {"fixture": True})
 
+        def capacity_report():
+            with lock:
+                sequence = len(capacity_checks) + 1
+                capacity_checks.append(sequence)
+            return {**green_report(4), "sequence": sequence}
+
         controller = CampaignController(
             plan, fixture.runtime, executor=execute,
-            capacity_reporter=lambda: green_report(4),
+            capacity_reporter=capacity_report,
         )
         terminal = controller.run()
         assert terminal["status"] == "terminal_with_isolated_failures"
@@ -313,6 +448,8 @@ def test_four_country_sessions_run_concurrently_and_sources_stay_sequential():
         first = "mlp:C00:source-0-0.example"
         second = "mlp:C00:source-0-1.example"
         assert periods[second][0] >= periods[first][1]
+        assert len(capacity_checks) == 12  # one per source, then one terminal report
+        assert terminal["terminal_capacity_report"]["sequence"] == 12
         startup = json.loads(
             (fixture.runtime.receipt_root / plan.campaign_id / "startup_receipt.json").read_text()
         )
@@ -376,12 +513,13 @@ def test_macos_ps_parser_finds_only_campaign_workers():
           102   101 S       00:01 /usr/bin/python parallel_observe_pure.py --workers 1
           103     1 S       00:01 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
           104     1 S       00:01 /usr/local/bin/chromedriver
+          105     1 S       00:01 /Applications/Google Chrome --headless --remote-debugging-port=0
         """,
         ignored_pids=(101,),
     )
     assert snapshot["local_controllers"] == []
     assert [row["pid"] for row in snapshot["network_observers"]] == [102]
-    assert [row["pid"] for row in snapshot["browser_workers"]] == [104]
+    assert [row["pid"] for row in snapshot["browser_workers"]] == [104, 105]
 
 
 class FakeProcess:

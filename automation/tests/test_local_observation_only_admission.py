@@ -51,6 +51,7 @@ def test_bounded_observation_is_admitted_only_with_controller_opt_in(monkeypatch
     assert module.OBSERVATION_READY is True
     assert module.Config.launch_ready is False
     assert module.Config.production_writes is False
+    assert getattr(module.Config, "browser_worker", False) is False
     assert module.PRODUCTION_WRITES is False
     assert module.BOUNDED_ROUTE_INVENTORY is True
     assert all(module._observation_gates().values())

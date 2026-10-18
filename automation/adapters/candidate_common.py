@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import io
 import re
 import threading
 import time
@@ -108,26 +109,49 @@ def bounded_request(
         url,
         timeout=timeout,
         allow_redirects=False,
+        stream=True,
         headers={
             "User-Agent": USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.1",
         },
     )
-    if response.status_code in {401, 403, 407, 429, 451}:
-        raise AccessBlockedError("publisher returned HTTP %s" % response.status_code)
-    if 300 <= response.status_code < 400:
-        raise AccessBlockedError("publisher returned an unreviewed redirect")
-    response.raise_for_status()
-    if not response.content:
-        raise RuntimeError("publisher returned an empty response")
-    if len(response.content) > max_bytes:
-        raise RuntimeError("publisher response exceeds the configured byte cap")
-    head = response.content[:24000].decode("utf-8", "replace")
-    title = re.search(r"<title[^>]*>(.*?)</title>", head, re.I | re.S)
-    if title and CHALLENGE.search(clean(title.group(1)) or ""):
-        raise AccessBlockedError("publisher returned a challenge page")
-    response.scrape_transport = "requests"
-    return response
+    try:
+        if response.status_code in {401, 403, 407, 429, 451}:
+            raise AccessBlockedError("publisher returned HTTP %s" % response.status_code)
+        if 300 <= response.status_code < 400:
+            raise AccessBlockedError("publisher returned an unreviewed redirect")
+        response.raise_for_status()
+        raw_length = response.headers.get("Content-Length")
+        if raw_length:
+            try:
+                if int(raw_length) > max_bytes:
+                    raise RuntimeError("publisher response exceeds the configured byte cap")
+            except ValueError:
+                raise RuntimeError("publisher returned an invalid Content-Length")
+        chunks: list[bytes] = []
+        observed = 0
+        for chunk in response.iter_content(chunk_size=64 * 1024):
+            if not chunk:
+                continue
+            observed += len(chunk)
+            if observed > max_bytes:
+                raise RuntimeError("publisher response exceeds the configured byte cap")
+            chunks.append(chunk)
+        payload = b"".join(chunks)
+        if not payload:
+            raise RuntimeError("publisher returned an empty response")
+        # Preserve the existing Response contract for adapter parsers after the
+        # bounded streaming read has closed the connection.
+        response._content = payload
+        response._content_consumed = True
+        head = payload[:24000].decode("utf-8", "replace")
+        title = re.search(r"<title[^>]*>(.*?)</title>", head, re.I | re.S)
+        if title and CHALLENGE.search(clean(title.group(1)) or ""):
+            raise AccessBlockedError("publisher returned a challenge page")
+        response.scrape_transport = "requests_stream_bounded"
+        return response
+    finally:
+        response.close()
 
 
 def robots_for(
@@ -194,9 +218,12 @@ def _local_name(tag: str) -> str:
 def parse_sitemap(payload: bytes) -> tuple[str, list[dict[str, Optional[str]]]]:
     if payload.startswith(b"\x1f\x8b"):
         try:
-            payload = gzip.decompress(payload)
+            with gzip.GzipFile(fileobj=io.BytesIO(payload)) as stream:
+                payload = stream.read(MAX_SITEMAP_BYTES + 1)
         except (OSError, EOFError) as exc:
             raise RuntimeError("publisher returned malformed gzip sitemap") from exc
+        if len(payload) > MAX_SITEMAP_BYTES:
+            raise RuntimeError("publisher gzip sitemap exceeds the decompressed byte cap")
     try:
         root = ElementTree.fromstring(payload)
     except ElementTree.ParseError as exc:

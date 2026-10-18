@@ -114,7 +114,10 @@ def parse_ps_snapshot(text: str, *, ignored_pids: Sequence[int] = ()) -> dict[st
     browsers = matching(
         lambda command: any(
             marker in command.lower()
-            for marker in ("chromedriver", "geckodriver", "playwright run-driver")
+            for marker in (
+                "chromedriver", "geckodriver", "playwright", "selenium",
+                "--headless", "--remote-debugging-port",
+            )
         )
     )
     return {
