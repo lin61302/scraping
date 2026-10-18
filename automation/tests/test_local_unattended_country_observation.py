@@ -407,6 +407,8 @@ def test_launcher_is_single_use_and_passes_guard_network_limit(recommended):
         args = argparse.Namespace(
             plan=plan_path, plan_sha256=plan_sha,
             controller_sha256=sha256_path(launcher.CONTROLLER_PATH),
+            launcher_sha256=sha256_path(launcher.LAUNCHER_PATH),
+            capacity_guard_sha256=sha256_path(launcher.CAPACITY_GUARD_PATH),
             automation_root=fixture.auto, output_root=fixture.runtime.output_root,
             receipt_root=fixture.runtime.receipt_root,
             host_lock_path=fixture.runtime.host_lock_path,
@@ -459,6 +461,8 @@ def test_launcher_refuses_blocked_shared_capacity_guard_before_attempt():
         args = argparse.Namespace(
             plan=plan_path, plan_sha256=plan_sha,
             controller_sha256=sha256_path(launcher.CONTROLLER_PATH),
+            launcher_sha256=sha256_path(launcher.LAUNCHER_PATH),
+            capacity_guard_sha256=sha256_path(launcher.CAPACITY_GUARD_PATH),
             automation_root=fixture.auto, output_root=fixture.runtime.output_root,
             receipt_root=fixture.runtime.receipt_root,
             host_lock_path=fixture.runtime.host_lock_path,
@@ -473,6 +477,11 @@ def test_launcher_refuses_blocked_shared_capacity_guard_before_attempt():
             "recommended_limits": {"network_workers": 0, "browser_workers": 0},
             "reasons": [{"code": "fixture_block"}],
         }
+        original_guard_hash = args.capacity_guard_sha256
+        args.capacity_guard_sha256 = "0" * 64
+        with pytest.raises(launcher.LaunchError, match="capacity guard .* changed"):
+            launcher.launch(args)
+        args.capacity_guard_sha256 = original_guard_hash
         with patch.object(launcher, "host_capacity_report", return_value=report):
             with pytest.raises(launcher.LaunchError, match="blocked launch"):
                 launcher.launch(args)

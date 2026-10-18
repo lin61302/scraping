@@ -45,6 +45,8 @@ from local_unattended_country_observation import (  # noqa: E402
 
 
 CONTROLLER_PATH = OPS_ROOT / "local_unattended_country_observation.py"
+CAPACITY_GUARD_PATH = OPS_ROOT / "host_capacity_guard.py"
+LAUNCHER_PATH = Path(__file__).resolve()
 UTC = timezone.utc
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -271,6 +273,12 @@ def _first_log_lines(path: Path, maximum_lines: int = 40, maximum_chars: int = 1
 
 
 def launch(args: argparse.Namespace) -> dict[str, object]:
+    expected_launcher = str(args.launcher_sha256).lower()
+    if not HEX64.fullmatch(expected_launcher) or sha256_path(LAUNCHER_PATH) != expected_launcher:
+        raise LaunchError("launcher is missing or its SHA-256 changed")
+    expected_guard = str(args.capacity_guard_sha256).lower()
+    if not HEX64.fullmatch(expected_guard) or sha256_path(CAPACITY_GUARD_PATH) != expected_guard:
+        raise LaunchError("capacity guard is missing or its SHA-256 changed")
     expected_controller = str(args.controller_sha256).lower()
     if not HEX64.fullmatch(expected_controller) or sha256_path(CONTROLLER_PATH) != expected_controller:
         raise LaunchError("controller is missing or its SHA-256 changed")
@@ -322,6 +330,8 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
             "attempted_at_utc": iso_now(), "single_use": True,
             "production_writes": False, "plan_sha256": plan.plan_sha256,
             "controller_sha256": expected_controller,
+            "launcher_sha256": expected_launcher,
+            "capacity_guard_sha256": expected_guard,
             "host_capacity_guard": guard,
             "network_sessions": runtime.network_sessions,
             "capacity_snapshot_sha256": hashlib.sha256(
@@ -376,6 +386,8 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                 "launched_at_utc": iso_now(), "production_writes": False,
                 "plan_sha256": plan.plan_sha256,
                 "controller_sha256": expected_controller,
+                "launcher_sha256": expected_launcher,
+                "capacity_guard_sha256": expected_guard,
                 "host_capacity_guard": guard,
                 "network_sessions": runtime.network_sessions,
                 "attempt_marker": {
@@ -409,6 +421,8 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                 "status": "launch_failed", "failed_at_utc": iso_now(),
                 "production_writes": False, "plan_sha256": plan.plan_sha256,
                 "controller_sha256": expected_controller,
+                "launcher_sha256": expected_launcher,
+                "capacity_guard_sha256": expected_guard,
                 "host_capacity_guard": guard,
                 "network_sessions": runtime.network_sessions,
                 "attempt_marker": str(args.attempt_marker.resolve()),
@@ -429,6 +443,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--plan", required=True, type=Path)
     parser.add_argument("--plan-sha256", required=True)
     parser.add_argument("--controller-sha256", required=True)
+    parser.add_argument("--launcher-sha256", required=True)
+    parser.add_argument("--capacity-guard-sha256", required=True)
     parser.add_argument("--automation-root", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--receipt-root", required=True, type=Path)
