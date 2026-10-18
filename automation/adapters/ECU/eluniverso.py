@@ -1,6 +1,7 @@
-"""Fail-closed pure candidate for El Universo daily news sitemaps."""
+"""Production-disabled bounded pure candidate for El Universo daily news sitemaps."""
 from __future__ import annotations
 
+import os
 from datetime import date, timedelta
 from xml.etree import ElementTree
 
@@ -14,9 +15,12 @@ class Config:
     access_block_circuit_threshold = 1
     production_writes = False
     launch_ready = False
+    observation_ready = True
 
 
 PRODUCTION_WRITES = False
+OBSERVATION_READY = True
+BOUNDED_ROUTE_INVENTORY = True
 ROUTE_PROFILE_APPROVED = False
 ARTICLE_PROFILE_APPROVED = True
 ROBOTS_POLICY_REVIEWED = True
@@ -65,9 +69,47 @@ def _daily_sitemap_urls(start: date, end: date) -> list[str]:
     return [DAILY_SITEMAP_TEMPLATE.format(day=(start + timedelta(days=i)).isoformat()) for i in range(count)]
 
 
+def _observation_gates() -> dict[str, bool]:
+    return {
+        "controller_opt_in_or_production_ready": (
+            os.environ.get("SCRAPER_BOUNDED_OBSERVATION") == "1"
+            or all(_gates().values())
+        ),
+        "observation_flag_enabled": (
+            OBSERVATION_READY is True and Config.observation_ready is True
+        ),
+        "production_writes_disabled": (
+            PRODUCTION_WRITES is False and Config.production_writes is False
+        ),
+        "bounded_route_inventory": BOUNDED_ROUTE_INVENTORY,
+        "bounded_acceptance_window": (
+            ACCEPT_START <= FIRST_PASS_TARGET
+            and (FIRST_PASS_TARGET - ACCEPT_START).days <= common.MAX_WINDOW_DAYS
+        ),
+        "article_profile_approved": ARTICLE_PROFILE_APPROVED,
+        "robots_policy_reviewed": ROBOTS_POLICY_REVIEWED,
+    }
+
+
 def _require_live_gates(evidence: dict | None = None) -> None:
-    gates = _gates()
-    if all(gates.values()):
+    production_gates = _gates()
+    observation_gates = _observation_gates()
+    if Config.observation_ready and all(observation_gates.values()):
+        if evidence is not None:
+            evidence.update(
+                {
+                    "admission": "bounded_pure_observation",
+                    "observation_ready": True,
+                    "launch_ready": False,
+                    "promotion_eligible": False,
+                    "production_gates_satisfied": all(production_gates.values()),
+                    "first_pass_verified_through": None,
+                    "strict_verified_through": None,
+                    "production_writes": False,
+                    **production_gates,
+                    **observation_gates,
+                }
+            )
         return
     if evidence is not None:
         evidence.update({
@@ -77,7 +119,7 @@ def _require_live_gates(evidence: dict | None = None) -> None:
             "accept_start": ACCEPT_START.isoformat(),
             "legacy_reference_sha256": LEGACY_REFERENCE_SHA256,
             "current_route_evidence_sha256": CURRENT_ROUTE_EVIDENCE_SHA256,
-            **gates, "coverage_complete": False,
+            **production_gates, "coverage_complete": False,
             "first_pass_verified_through": None, "strict_verified_through": None,
             "production_writes": False,
         })
