@@ -111,7 +111,10 @@ class HostCapacityGuardTests(unittest.TestCase):
                 "memory_available_bytes": 12 * GIB,
             },
             "load": {"load5": 24.0},  # Exactly 1.5 per CPU.
-            "swap": {"swap_used_bytes": 12 * GIB},  # Exactly 75 percent.
+            "swap_pressure": {
+                "swap_used_bytes": 12 * GIB,  # Exactly 75 percent.
+                "memory_available_bytes": 15 * GIB,
+            },
             "processes": {"scrape_processes": 12, "browser_processes": 1},
             "max_log": {"max_log_bytes": 4 * GIB},
             "roots": {"configured_roots_total_bytes": 50 * GIB},
@@ -123,6 +126,18 @@ class HostCapacityGuardTests(unittest.TestCase):
                 self.assertEqual(report["status"], "blocked")
                 self.assertFalse(report["launch_allowed"])
                 self.assertEqual(report["recommended_limits"], {"network_workers": 0, "browser_workers": 0})
+
+    def test_sticky_high_swap_with_healthy_current_memory_reduces_instead_of_blocks(self):
+        report = evaluate_capacity(healthy(
+            swap_used_bytes=12 * GIB,
+            memory_available_bytes=48 * GIB,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "reduced")
+        self.assertTrue(report["launch_allowed"])
+        self.assertEqual(report["recommended_limits"], {"network_workers": 2, "browser_workers": 0})
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("swap_used_percent_reduced", codes)
+        self.assertNotIn("swap_pressure_blocked", codes)
 
     def test_blocked_reason_overrides_reduced_reasons(self):
         report = evaluate_capacity(healthy(

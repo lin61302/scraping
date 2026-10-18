@@ -287,10 +287,28 @@ def evaluate_capacity(metrics: HostMetrics, thresholds: Thresholds | None = None
                 "Swap metrics are invalid.",
             ))
         elif swap_used_percent >= limits.swap_block_percent:
-            reasons.append(_reason(
-                "swap_used_percent_blocked", "blocked", round(swap_used_percent, 3),
-                limits.swap_block_percent, "Swap use reached the blocked threshold.",
-            ))
+            # Swap occupancy is sticky on both macOS and Linux and can remain
+            # high after memory pressure has passed.  Block only when high swap
+            # coincides with low currently available memory; otherwise keep the
+            # campaign network-only and reduced.
+            memory_low = (
+                memory_available_percent is None
+                or metrics.memory_available_bytes is None
+                or metrics.memory_available_bytes < limits.memory_reduce_bytes
+                or memory_available_percent < limits.memory_reduce_percent
+            )
+            if memory_low:
+                reasons.append(_reason(
+                    "swap_pressure_blocked", "blocked", round(swap_used_percent, 3),
+                    limits.swap_block_percent,
+                    "High swap use coincides with low available memory.",
+                ))
+            else:
+                reasons.append(_reason(
+                    "swap_used_percent_reduced", "reduced", round(swap_used_percent, 3),
+                    limits.swap_block_percent,
+                    "Swap use is high, but current memory remains available; use reduced workers.",
+                ))
         elif swap_used_percent >= limits.swap_reduce_percent:
             reasons.append(_reason(
                 "swap_used_percent_reduced", "reduced", round(swap_used_percent, 3),

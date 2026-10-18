@@ -39,14 +39,16 @@ returns one of these recommendations:
 
 The default guard blocks when any required metric is unavailable. It also
 blocks below 30 GiB or 3% filesystem free, below 8 GiB or 10% available
-memory, at normalized five-minute load of 1.5 per CPU, at 75% swap use, above
+memory, at normalized five-minute load of 1.5 per CPU, when at least 75% swap
+use coincides with less than 16 GiB or 20% available memory, above
 12 matching scraper and browser processes, at a 4 GiB individual log, at
 50 GiB across configured log and output roots, or below a 1,024 soft file
 descriptor limit.
 
 The guard reduces work below 60 GiB or 8% filesystem free, below 16 GiB or
 20% available memory, at normalized five-minute load of 0.8 per CPU, at 50%
-swap use, above six matching processes, at a 1 GiB individual log, at 25 GiB
+swap use (including sticky high swap when current memory is healthy), above
+six matching processes, at a 1 GiB individual log, at 25 GiB
 across configured roots, or below a 4,096 soft file descriptor limit.
 
 Run the guard at controller startup, before dispatching another source, and at
