@@ -1,6 +1,6 @@
 {
   "campaign_id": "local-country-observation-20261018-through-20260930",
-  "code_git_commit": "d7c20f5443af004e609daab4e8baadc7681e5b01",
+  "code_git_commit": "3dd2caf11fac10a93aa0ddae490ba08f7f871717",
   "concurrency": {
     "browser": 0,
     "max_active_country_sessions": 4,
