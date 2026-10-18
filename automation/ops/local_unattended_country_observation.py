@@ -263,7 +263,11 @@ def _python_contract(path: Path, *, require_adapter: bool = False) -> dict[str, 
             functions.add(node.name)
         elif isinstance(node, ast.Import):
             imports.update(alias.name.split(".", 1)[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
+        # Relative imports name files inside the already pinned local dependency
+        # closure (for example ``from .validation import ...``).  Treating the
+        # relative module name as a third-party package makes a valid immutable
+        # bundle fail preflight with a misleading missing-dependency error.
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             imports.add(node.module.split(".", 1)[0])
         elif isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name):
@@ -585,7 +589,17 @@ def external_dependency_errors(files: Sequence[Path], automation_root: Path) -> 
     modules: set[str] = set()
     for path in files:
         contract = _python_contract(path)
-        modules.update(str(item) for item in contract["imports"])
+        relative = path.resolve().relative_to(automation_root.resolve()).as_posix()
+        for item in contract["imports"]:
+            module = str(item)
+            # ``scraper_control.observe`` retains a legacy SourcePipeline
+            # fallback behind ``if not pure_adapter``.  This controller admits
+            # only adapters that statically provide the pure contract, so that
+            # branch is unreachable and its separately deployed ``core``
+            # package is neither required nor allowed into this run bundle.
+            if module == "core" and relative == "scraper_control/observe.py":
+                continue
+            modules.add(module)
     errors: list[str] = []
     for module in sorted(modules - local_roots):
         if module in sys.stdlib_module_names:

@@ -29,6 +29,7 @@ from ops.local_unattended_country_observation import (  # noqa: E402
     adapter_bundle_sha256,
     build_observer_command,
     execution_bundle_sha256,
+    external_dependency_errors,
     load_plan,
     sha256_path,
 )
@@ -193,6 +194,28 @@ def green_report(network: int = 4) -> dict[str, object]:
         "recommended_limits": {"network_workers": network, "browser_workers": 0},
         "reasons": [],
     }
+
+
+def test_external_dependency_check_ignores_local_relative_imports_and_unreachable_legacy_core():
+    with tempfile.TemporaryDirectory() as directory:
+        automation = Path(directory) / "automation"
+        control = automation / "scraper_control"
+        control.mkdir(parents=True)
+        (control / "validation.py").write_text("VALUE = 1\n", encoding="utf-8")
+        observer = control / "observe.py"
+        observer.write_text(
+            "from .validation import VALUE\n"
+            "def legacy_fallback():\n"
+            "    import core.base_pipeline\n",
+            encoding="utf-8",
+        )
+        assert external_dependency_errors([observer], automation) == []
+
+        adapter = automation / "adapter.py"
+        adapter.write_text("import dependency_that_does_not_exist_1018\n", encoding="utf-8")
+        assert external_dependency_errors([adapter], automation) == [
+            "missing_python_dependency:dependency_that_does_not_exist_1018"
+        ]
 
 
 def test_plan_requires_exact_ten_country_network_only_contract():
