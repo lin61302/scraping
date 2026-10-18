@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "expected_github_login": "lin61302",
+  "repository": {
+    "remote": "origin",
+    "owner": "lin61302",
+    "name": "scraping",
+    "branch": "main",
+    "upstream": "origin/main"
+  },
+  "limits": {
+    "max_file_bytes": 1048576,
+    "max_files": 100,
+    "max_run_records": 200,
+    "max_sources_per_record": 100,
+    "max_evidence_sha256_per_record": 100
+  },
+  "allowed": {
+    "top_level_directories": [
+      "automation",
+      "docs",
+      "env_project",
+      "Remedios",
+      "Roya_project",
+      "scripts",
+      "src",
+      "tests",
+      "tools"
+    ],
+    "root_extensions": [
+      ".py",
+      ".sh"
+    ],
+    "extensions": [
+      ".js",
+      ".json",
+      ".md",
+      ".py",
+      ".sh",
+      ".toml",
+      ".ts",
+      ".yaml",
+      ".yml"
+    ],
+    "executable_extensions": [
+      ".py",
+      ".sh"
+    ],
+    "forbidden_components": [
+      ".env",
+      ".git",
+      ".ssh",
+      "backups",
+      "browser_profiles",
+      "credentials",
+      "data",
+      "logs",
+      "outputs",
+      "raw",
+      "receipts",
+      "secrets"
+    ]
+  },
+  "privacy": {
+    "allowed_count_keys": [
+      "accepted",
+      "attempted",
+      "discovered",
+      "errors",
+      "excluded",
+      "failed",
+      "passed",
+      "selected",
+      "skipped",
+      "timed_out"
+    ]
+  },
+  "validation_commands": [
+    [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "automation/tests",
+      "-p",
+      "test_*.py"
+    ]
+  ]
+}
