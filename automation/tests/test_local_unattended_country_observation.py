@@ -37,6 +37,12 @@ from ops.local_unattended_country_observation import (  # noqa: E402
 )
 
 
+def test_controller_source_is_compatible_with_python_3_8_runtime_surface():
+    source = Path(controller.__file__).read_text(encoding="utf-8")
+    assert ".removeprefix(" not in source
+    assert "sys.stdlib_module_names" not in source
+
+
 OBSERVER = r'''#!/usr/bin/env python3
 import argparse
 import hashlib

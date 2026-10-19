@@ -543,9 +543,14 @@ def _parse_source(
     contract = _python_contract(adapter, require_adapter=True)
     config = contract["config"]
     expected_project = "mleed" if config.get("is_env") is True else "mlp"
-    configured_domain = str(config.get("source_name") or "").lower().removeprefix("www.")
+    configured_domain = str(config.get("source_name") or "").lower()
+    if configured_domain.startswith("www."):
+        configured_domain = configured_domain[4:]
     configured_country = str(config.get("country_code") or "").upper()
-    if configured_domain and configured_domain != parts[2].lower().removeprefix("www."):
+    source_domain = parts[2].lower()
+    if source_domain.startswith("www."):
+        source_domain = source_domain[4:]
+    if configured_domain and configured_domain != source_domain:
         raise PlanError(f"{label} source identity differs from Config.source_name")
     if configured_country and configured_country != country:
         raise PlanError(f"{label} country differs from Config.country_code")
@@ -700,8 +705,11 @@ def external_dependency_errors(files: Sequence[Path], automation_root: Path) -> 
                 continue
             modules.add(module)
     errors: list[str] = []
+    stdlib_module_names = frozenset(
+        getattr(sys, "stdlib_module_names", sys.builtin_module_names)
+    )
     for module in sorted(modules - local_roots):
-        if module in sys.stdlib_module_names:
+        if module in stdlib_module_names:
             continue
         try:
             available = importlib.util.find_spec(module) is not None
