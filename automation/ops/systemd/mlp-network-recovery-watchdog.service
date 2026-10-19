@@ -1,0 +1,28 @@
+[Unit]
+Description=Conservative NetworkManager connectivity recovery watchdog
+After=NetworkManager.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+Environment=PYTHONDONTWRITEBYTECODE=1 PYTHONPATH= PYTHONHOME= PYTHONINSPECT= PYTHONSTARTUP= LD_PRELOAD= LD_LIBRARY_PATH=
+ExecStart=/usr/bin/python3 -I /usr/local/libexec/mlp-network-recovery-watchdog --config-file /etc/mlp-network-recovery-watchdog.conf --state-file /var/lib/mlp-network-recovery-watchdog/state.json --lock-file /run/mlp-network-recovery-watchdog/watchdog.lock
+StateDirectory=mlp-network-recovery-watchdog
+StateDirectoryMode=0700
+RuntimeDirectory=mlp-network-recovery-watchdog
+RuntimeDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=75s
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+PrivateDevices=true
+LockPersonality=true
+MemoryDenyWriteExecute=true

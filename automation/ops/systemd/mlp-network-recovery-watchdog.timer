@@ -1,0 +1,13 @@
+[Unit]
+Description=Check NetworkManager connectivity every two minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=2min
+AccuracySec=15s
+RandomizedDelaySec=15s
+Persistent=true
+Unit=mlp-network-recovery-watchdog.service
+
+[Install]
+WantedBy=timers.target
