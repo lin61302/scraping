@@ -125,6 +125,21 @@ class PrivacyAndManifestTests(unittest.TestCase):
         with self.assertRaises(publisher.PublishError):
             publisher.prepare_manifest(manifest_path, self.source, self.repo, self.policy)
 
+    def test_systemd_unit_extensions_are_narrowly_allowlisted(self):
+        for name in ("watchdog.service", "watchdog.timer"):
+            publisher._validate_destination(
+                Path("automation/ops/systemd") / name,
+                self.policy,
+                "systemd unit",
+            )
+            for outside in (
+                Path("automation/ops") / name,
+                Path("scripts") / name,
+                Path("docs") / name,
+            ):
+                with self.assertRaisesRegex(publisher.PublishError, "extension"):
+                    publisher._validate_destination(outside, self.policy, "outside unit")
+
     def test_secret_local_path_binary_and_infrastructure_gates(self):
         documentation_ip = ".".join(["203", "0", "113", "7"])
         host_label = "machine" + "-" + "17"

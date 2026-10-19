@@ -381,7 +381,11 @@ def _validate_destination(path: Path, policy: Mapping[str, Any], context: str) -
     top = path.parts[0]
     named_top_levels = set(allowed["top_level_directories"])
     suffix = path.suffix.lower()
-    if suffix not in set(allowed["extensions"]):
+    reviewed_systemd_unit = (
+        path.parts[:3] == ("automation", "ops", "systemd")
+        and suffix in {".service", ".timer"}
+    )
+    if suffix not in set(allowed["extensions"]) and not reviewed_systemd_unit:
         raise PublishError("forbidden_extension", "%s has a disallowed extension" % context)
     if len(path.parts) == 1:
         if suffix not in set(allowed["root_extensions"]):
