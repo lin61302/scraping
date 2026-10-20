@@ -153,9 +153,12 @@ def scrape_url(url: str) -> dict:
     target = common.canonicalize_url(url, allowed_hosts=ALLOWED_HOSTS, canonical_host=CANONICAL_HOST)
     if target != url.rstrip("/"):
         raise ValueError("247 Malawi adapter refused a noncanonical URL")
+    article_request_url = target + "/"
     robots_response, robots = common.robots_for(ROBOTS_URL, _request)
-    common.require_allowed(robots, target)
-    response = _request(target, max_bytes=common.MAX_ARTICLE_BYTES)
+    common.require_allowed(robots, article_request_url)
+    response = _request(article_request_url, max_bytes=common.MAX_ARTICLE_BYTES)
+    if response.url != article_request_url:
+        raise common.AccessBlockedError("247 Malawi returned an unexpected article response URL")
     article = _parse_article_html(target, response.content, response_url=response.url)
     article["field_evidence"]["robots_sha256"] = common.sha256(robots_response.content)
     return article
