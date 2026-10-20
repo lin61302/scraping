@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import sys
 
@@ -72,3 +73,44 @@ def test_gzip_sitemap_decompression_is_bounded(monkeypatch):
     payload = gzip.compress(b"<urlset>" + b"x" * 256 + b"</urlset>")
     with pytest.raises(RuntimeError, match="decompressed byte cap"):
         common.parse_sitemap(payload)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (
+            "2026-09-10T12:34:56+0100",
+            datetime(2026, 9, 10, 12, 34, 56, tzinfo=timezone(timedelta(hours=1))),
+        ),
+        (
+            "2026-09-10T12:34:56-0430",
+            datetime(
+                2026, 9, 10, 12, 34, 56,
+                tzinfo=timezone(-timedelta(hours=4, minutes=30)),
+            ),
+        ),
+        (
+            "2026-09-10T12:34:56+01:00",
+            datetime(2026, 9, 10, 12, 34, 56, tzinfo=timezone(timedelta(hours=1))),
+        ),
+        (
+            "2026-09-10T11:34:56Z",
+            datetime(2026, 9, 10, 11, 34, 56, tzinfo=timezone.utc),
+        ),
+        ("2026-09-10", datetime(2026, 9, 10)),
+    ],
+)
+def test_parse_datetime_accepts_compact_offsets_and_existing_iso_formats(raw, expected):
+    assert common.parse_datetime(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "2026-09-10T12:34:56+0160",
+        "2026-09-10T12:34:56+0100 trailing",
+        "not a timestamp",
+    ],
+)
+def test_parse_datetime_keeps_malformed_values_fail_closed(raw):
+    assert common.parse_datetime(raw) is None

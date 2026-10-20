@@ -205,8 +205,23 @@ def parse_datetime(raw: object) -> Optional[datetime]:
     value = clean(raw)
     if not value:
         return None
+    # Python 3.8's ``fromisoformat`` rejects compact UTC offsets such as
+    # ``+0100`` even though publishers commonly emit them.  Normalize only an
+    # exact trailing offset and leave all other malformed values fail-closed.
+    value = value.replace("Z", "+00:00")
+    compact_offset = re.search(r"([+-])(\d{2})(\d{2})$", value)
+    if compact_offset:
+        if int(compact_offset.group(2)) > 23 or int(compact_offset.group(3)) > 59:
+            return None
+        value = (
+            value[: compact_offset.start()]
+            + compact_offset.group(1)
+            + compact_offset.group(2)
+            + ":"
+            + compact_offset.group(3)
+        )
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return datetime.fromisoformat(value)
     except ValueError:
         return None
 
