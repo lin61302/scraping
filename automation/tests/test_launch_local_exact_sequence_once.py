@@ -60,6 +60,31 @@ def green_process_snapshot(own: int = 2) -> dict[str, object]:
     }
 
 
+def test_startup_capacity_accepts_one_owned_controller_process():
+    startup_capacity = green_capacity()
+    startup_capacity["metrics"] = {
+        "scrape_processes": 1,
+        "browser_processes": 0,
+    }
+
+    assert launcher._startup_capacity_errors(startup_capacity) == []
+
+
+def test_foreign_network_ownership_remains_rejected_post_start():
+    startup_capacity = green_capacity()
+    startup_capacity["metrics"] = {
+        "scrape_processes": 1,
+        "browser_processes": 0,
+    }
+    foreign_processes = green_process_snapshot(own=1)
+    foreign_processes["foreign_network_processes"] = 1
+
+    assert launcher._startup_capacity_errors(startup_capacity) == []
+    assert "post_start_foreign_network_process_detected" in (
+        launcher._post_start_capacity_errors(green_capacity(), foreign_processes)
+    )
+
+
 def inspect_now(process, startup_path: Path, terminal_path: Path):
     startup = launcher._load_json(startup_path) if startup_path.is_file() else None
     terminal = launcher._load_json(terminal_path) if terminal_path.is_file() else None

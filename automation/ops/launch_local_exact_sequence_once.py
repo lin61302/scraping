@@ -423,10 +423,21 @@ def _startup_capacity_errors(report: object) -> list[str]:
     if not isinstance(metrics, Mapping):
         errors.append("startup_capacity_metrics_missing")
     else:
-        if int(metrics.get("scrape_processes") or 0) != 0:
-            errors.append("startup_conflicting_network_process")
-        if int(metrics.get("browser_processes") or 0) != 0:
-            errors.append("startup_conflicting_browser_process")
+        try:
+            scrape_count = int(metrics.get("scrape_processes"))
+            browser_count = int(metrics.get("browser_processes"))
+        except (TypeError, ValueError):
+            errors.append("startup_process_metrics_invalid")
+        else:
+            # The controller has already started when it writes this receipt,
+            # so the broad scrape-process count normally includes that owned
+            # process.  Ownership is established by the exact post-start
+            # classifier; this gate still rejects malformed counts and every
+            # browser process.
+            if scrape_count < 0 or browser_count < 0:
+                errors.append("startup_process_metrics_invalid")
+            if browser_count != BROWSER_CEILING:
+                errors.append("startup_conflicting_browser_process")
     return errors
 
 
