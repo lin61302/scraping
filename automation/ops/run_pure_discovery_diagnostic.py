@@ -128,7 +128,9 @@ def structural_class(payload: bytes) -> str:
         root = None
     if root is not None:
         return "xml:%s" % root.tag.rsplit("}", 1)[-1].casefold()
-    lowered = prefix[:2048].casefold()
+    # Keep the HTML marker scan on raw bytes.  ``bytes`` supports ``lower``
+    # (ASCII-safe for these markers), whereas ``casefold`` is text-only.
+    lowered = prefix[:2048].lower()
     if b"<!doctype html" in lowered or b"<html" in lowered:
         return "html"
     try:
