@@ -9,6 +9,11 @@
   },
   "event": "launch",
   "kind": "sanitized_immutable_launch_run_provenance",
+  "code_provenance": {
+    "diagnostic_fix_commit": "393f54de4d60332963c376c14ac7544df7be66c3",
+    "launcher_fix_commit": "22ffde39b1629f4aecdfb0e0243e9add58fbe7a1",
+    "runtime_control_plane_commit": "a69b87d90a07d19ec0210e4504e9d10d52b0743a"
+  },
   "launch_evidence": {
     "attempt_receipt_sha256": "8d7f72da881e4a88270f6a7eac64ce7ec944489860ee693f8c20cca6a0521d8a",
     "launch_receipt_sha256": "2a1aa68d0c2b446bbf3e3e72ec037661a4913a40276533404e21de1a9930113e",
@@ -41,6 +46,17 @@
   },
   "schema_version": 1,
   "sequence_id": "local-exact-repair-recovery2-20261024-through-20260930",
+  "source_ids": [
+    "mlp:ECU:eluniverso.com",
+    "mlp:PER:elcomercio.pe",
+    "mlp:COD:7sur7.cd",
+    "mlp:LBR:liberianinvestigator.com",
+    "mlp:MWI:247malawi.com",
+    "mlp:PAN:newsroompanama.com",
+    "mlp:SLB:sibconline.com.sb",
+    "mlp:SSD:eyeradio.org",
+    "mlp:UGA:eagle.co.ug"
+  ],
   "source_state_changed": false,
   "window_id": "2026-10-25_0615"
 }
