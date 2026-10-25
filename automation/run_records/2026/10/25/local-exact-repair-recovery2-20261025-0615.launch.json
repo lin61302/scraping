@@ -1,0 +1,46 @@
+{
+  "boundary_effect": {
+    "coverage_advanced": false,
+    "first_pass_verified_through_changed": false,
+    "operational_through_changed": false,
+    "recorded_notion_boundary_changed": false,
+    "source_dates_changed": false,
+    "strict_verified_through_changed": false
+  },
+  "event": "launch",
+  "kind": "sanitized_immutable_launch_run_provenance",
+  "launch_evidence": {
+    "attempt_receipt_sha256": "8d7f72da881e4a88270f6a7eac64ce7ec944489860ee693f8c20cca6a0521d8a",
+    "launch_receipt_sha256": "2a1aa68d0c2b446bbf3e3e72ec037661a4913a40276533404e21de1a9930113e",
+    "startup_receipt_sha256": "4ef1c090c9b22484e5cc950b1fa9b5f2f64a23aa9e8693e62a9f08a03b819f27",
+    "terminal_receipt_reviewed": false
+  },
+  "launch_scope": {
+    "browser_ceiling": 0,
+    "exact_identity_count": 5322,
+    "lane_count": 9,
+    "network_ceiling": 2,
+    "phase_count": 3
+  },
+  "occurred_at_utc": "2026-10-25T10:23:05.667432Z",
+  "outcome": "launched_unattended",
+  "pins": {
+    "binding_sha256": "b10b36191257c383dba3f284aa0b6750ed28c2ace7d24d8094df615ba26b1d2e",
+    "deployment_manifest_sha256": "37e45030e8e19b4ba98bac59a634fb304b145d432b1c7fb13796604a96ab4b6e",
+    "deployment_sha256": "2927add8f4891983d77c569398852a7616f3bb23178c41201b585a46db2d279e",
+    "launch_argv_sha256": "11820fb639551bf2a09fb2d29de470d0db1f8af3c703d8b1cb17171b863b6ab3",
+    "plan_sha256": "421b5d878a103d06bbe7d10d6ec35dc162e1cd5b71ae15c40d47fcb852974746"
+  },
+  "production_writes": false,
+  "review_evidence": {
+    "authorization_review_sha256": "f7102a1ef3fdd5bdaf1d60097fc05ace352acf6d57ddef28f8aacd2c407396ce",
+    "capacity_review_sha256": "68e5386839c35d9a2b69daf6d33c2bd10bc2975dc4964f401250c16c86ba85a4",
+    "launch_review_sha256": "0f12445c7105551e5386cb6af7f28d302a8671f99e78c495ae510630ebddec2f",
+    "packet_integrity_review_sha256": "9a51f528c501fa74e88d58c227b046a70b20f3e55fd33adb59d5d6f4511cd8bc",
+    "preflight_review_sha256": "8f0a9d4dd68bd083c833cb9b5d6c20f78f26f19c44cfd1acadb85866c1c6debe"
+  },
+  "schema_version": 1,
+  "sequence_id": "local-exact-repair-recovery2-20261024-through-20260930",
+  "source_state_changed": false,
+  "window_id": "2026-10-25_0615"
+}
