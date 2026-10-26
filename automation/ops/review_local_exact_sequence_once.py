@@ -196,9 +196,8 @@ def _load_plan(path: Path, expected_sha: str) -> tuple[Dict[str, Any], Dict[str,
     if not SAFE_ID.fullmatch(sequence_id):
         raise ReviewError("invalid_sequence_id")
     phases = plan.get("phases")
-    if not isinstance(phases, list) or len(phases) != 3:
-        raise ReviewError("exact_three_phases_required")
-    lane_count = 0
+    if not isinstance(phases, list) or not phases:
+        raise ReviewError("nonempty_phases_required")
     seen_phases: set[str] = set()
     seen_lanes: set[str] = set()
     for phase in phases:
@@ -206,7 +205,12 @@ def _load_plan(path: Path, expected_sha: str) -> tuple[Dict[str, Any], Dict[str,
             raise ReviewError("unsafe_phase")
         phase_id = str(phase.get("phase_id", ""))
         lanes = phase.get("lanes")
-        if not SAFE_ID.fullmatch(phase_id) or phase_id in seen_phases or not isinstance(lanes, list):
+        if (
+            not SAFE_ID.fullmatch(phase_id)
+            or phase_id in seen_phases
+            or not isinstance(lanes, list)
+            or not lanes
+        ):
             raise ReviewError("invalid_phase")
         seen_phases.add(phase_id)
         for lane in lanes:
@@ -222,10 +226,12 @@ def _load_plan(path: Path, expected_sha: str) -> tuple[Dict[str, Any], Dict[str,
             ):
                 raise ReviewError("invalid_lane")
             seen_lanes.add(lane_id)
-            lane_count += 1
-    if lane_count != 9:
-        raise ReviewError("exact_nine_lanes_required")
     return plan, facts
+
+
+def _plan_counts(plan: Mapping[str, Any]) -> tuple[int, int]:
+    phases = plan["phases"]
+    return len(phases), sum(len(phase["lanes"]) for phase in phases)
 
 
 def _receipt_allowlist(plan: Mapping[str, Any]) -> tuple[Dict[str, Dict[str, Any]], Dict[str, Any], Dict[str, Any]]:
@@ -474,10 +480,12 @@ def _validate_terminal_chain(
         return loaded[relative]
 
     sequence, sequence_facts = read("terminal_receipt.json")
+    _, lane_count = _plan_counts(plan)
     expected_sequence = {
         "schema_version": 1, "kind": "exact_observation_sequence_terminal",
         "terminal": True, "sequence_id": plan["sequence_id"],
-        "plan_sha256": plan_sha, "lane_count": 9, "production_writes": False,
+        "plan_sha256": plan_sha, "lane_count": lane_count,
+        "production_writes": False,
         "verified_completion": False, "tracker_boundary_advancement": False,
     }
     if any(sequence.get(key) != value for key, value in expected_sequence.items()):
@@ -757,6 +765,7 @@ def review_once(args: argparse.Namespace) -> Dict[str, Any]:
             else:
                 errors.append("unexpected_or_unpinned_sequence_process")
 
+    phase_count, lane_count = _plan_counts(plan)
     report: Dict[str, Any] = {
         "schema_version": 1,
         "kind": "private_local_exact_sequence_review_snapshot",
@@ -765,7 +774,11 @@ def review_once(args: argparse.Namespace) -> Dict[str, Any]:
         "sequence_id": sequence_id,
         "capture_cutoff_utc": cutoff.isoformat().replace("+00:00", "Z"),
         "production_writes": False,
-        "plan": {"sha256": plan_facts["sha256"], "phase_count": 3, "lane_count": 9},
+        "plan": {
+            "sha256": plan_facts["sha256"],
+            "phase_count": phase_count,
+            "lane_count": lane_count,
+        },
         "controller": {"sha256": controller_facts["sha256"]},
         "receipt_allowlist": sorted(allowed),
         "incremental_receipts": incremental,

@@ -33,7 +33,12 @@ def write_json(path: Path, value: object) -> str:
     return sha_bytes(payload)
 
 
-def fixture(tmp_path: Path):
+def fixture(
+    tmp_path: Path,
+    *,
+    phase_layout: tuple[int, ...] = (2, 1, 6),
+    diagnostic_lanes: int = 2,
+):
     deployment = tmp_path / "deployment"
     runtime = tmp_path / "runtime.private"
     review = tmp_path / "review"
@@ -44,14 +49,13 @@ def fixture(tmp_path: Path):
     controller.parent.mkdir(parents=True)
     controller.write_text("# controller\n")
     controller_sha = sha_bytes(controller.read_bytes())
-    phase_layout = (2, 1, 6)
     phases = []
     index = 0
     for phase_number, count in enumerate(phase_layout, 1):
         lanes = []
         for _ in range(count):
             index += 1
-            kind = "discovery_diagnostic" if index <= 2 else "exact_urls"
+            kind = "discovery_diagnostic" if index <= diagnostic_lanes else "exact_urls"
             lanes.append({
                 "lane_id": "lane-%02d" % index,
                 "source_id": "mlp:T%02d:source%d.example" % (index, index),
@@ -111,7 +115,14 @@ def exact_process(args):
     }]
 
 
-def install_terminal_chain(plan, args, *, corrupt_sequence_hash=False, artifacts=False):
+def install_terminal_chain(
+    plan,
+    args,
+    *,
+    corrupt_sequence_hash=False,
+    artifacts=False,
+    terminal_lane_count=None,
+):
     receipt_root = args.runtime_root / "receipts" / plan["sequence_id"]
     output_root = args.runtime_root / "outputs" / plan["sequence_id"]
     attempt = {
@@ -193,7 +204,9 @@ def install_terminal_chain(plan, args, *, corrupt_sequence_hash=False, artifacts
         relative = "phases/%s/terminal_receipt.json" % reviewer._safe_name(phase["phase_id"])
         phase_hashes[phase["phase_id"]] = write_json(receipt_root / relative, phase_terminal)
     if corrupt_sequence_hash:
-        lane_hashes["lane-09"] = "f" * 64
+        last_lane_id = plan["phases"][-1]["lanes"][-1]["lane_id"]
+        lane_hashes[last_lane_id] = "f" * 64
+    lane_count = sum(len(phase["lanes"]) for phase in plan["phases"])
     terminal = {
         "schema_version": 1,
         "kind": "exact_observation_sequence_terminal",
@@ -201,7 +214,7 @@ def install_terminal_chain(plan, args, *, corrupt_sequence_hash=False, artifacts
         "status": "terminal_observation_sequence",
         "sequence_id": plan["sequence_id"],
         "plan_sha256": args.plan_sha256,
-        "lane_count": 9,
+        "lane_count": lane_count if terminal_lane_count is None else terminal_lane_count,
         "lane_terminal_sha256": lane_hashes,
         "phase_terminal_sha256": phase_hashes,
         "state_counts": total_counts,
@@ -272,6 +285,58 @@ def test_terminal_verifies_three_phase_nine_lane_chain_and_allowlisted_artifacts
     assert calls == {"ps": 1, "capacity": 1}
     serialized = json.dumps(report)
     assert "https://" not in serialized and "secret article" not in serialized
+
+
+def test_terminal_derives_one_phase_four_lane_counts_from_plan(tmp_path, monkeypatch):
+    plan, args = fixture(tmp_path, phase_layout=(4,), diagnostic_lanes=0)
+    install_terminal_chain(plan, args)
+    calls = patch_snapshots(monkeypatch, [])
+
+    report = reviewer.review_once(args)
+
+    assert report["classification"] == "terminal"
+    assert report["plan"] == {
+        "sha256": args.plan_sha256,
+        "phase_count": 1,
+        "lane_count": 4,
+    }
+    assert len([
+        row for row in report["terminal_chain_receipts"] if row.get("lane_id")
+    ]) == 4
+    assert len([
+        row for row in report["terminal_chain_receipts"]
+        if row.get("phase_id") and not row.get("lane_id")
+    ]) == 1
+    assert calls == {"ps": 1, "capacity": 1}
+
+
+def test_one_phase_four_lane_terminal_rejects_wrong_declared_lane_count(tmp_path, monkeypatch):
+    plan, args = fixture(tmp_path, phase_layout=(4,), diagnostic_lanes=0)
+    install_terminal_chain(plan, args, terminal_lane_count=9)
+    patch_snapshots(monkeypatch, [])
+
+    report = reviewer.review_once(args)
+
+    assert report["classification"] == "inconsistent"
+    assert report["errors"] == ["invalid_sequence_terminal"]
+
+
+@pytest.mark.parametrize(
+    ("phase_layout", "error"),
+    [
+        ((), "nonempty_phases_required"),
+        ((0,), "invalid_phase"),
+    ],
+)
+def test_plan_requires_nonempty_phases_and_lanes(tmp_path, phase_layout, error):
+    _plan, args = fixture(
+        tmp_path,
+        phase_layout=phase_layout,
+        diagnostic_lanes=0,
+    )
+
+    with pytest.raises(reviewer.ReviewError, match=error):
+        reviewer._load_plan(args.plan, args.plan_sha256)
 
 
 def test_terminal_reads_each_receipt_at_most_once(tmp_path, monkeypatch):
