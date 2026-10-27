@@ -32,6 +32,13 @@ from pathlib import Path
 from typing import Iterator, Mapping, Optional, Sequence
 
 
+# This script itself is executed from the immutable deployment.  Apply the
+# in-process equivalent of ``-B`` before importing any deployment-local module
+# so even a misconstructed future wrapper cannot create import bytecode before
+# the launcher's validated controller environment takes effect.  Reviewed
+# launch argv must still supply ``-B`` and ``PYTHONDONTWRITEBYTECODE=1``.
+sys.dont_write_bytecode = True
+
 OPS_ROOT = Path(__file__).resolve().parent
 if str(OPS_ROOT) not in sys.path:
     sys.path.insert(0, str(OPS_ROOT))
@@ -69,6 +76,8 @@ BROWSER_PATTERNS = (
     "chromedriver", "geckodriver", "playwright", "--headless",
     "--remote-debugging-port", "selenium",
 )
+PYTHON_NO_BYTECODE_FLAG = "-B"
+PYTHON_DONT_WRITE_BYTECODE = "PYTHONDONTWRITEBYTECODE"
 RUNTIME_PROCESS_MARKERS = (
     "unattended_exact_observation_sequence.py",
     "parallel_observe_pure.py",
@@ -481,7 +490,7 @@ def build_controller_command(
     plan_sha256: str, runtime: RuntimePaths,
 ) -> list[str]:
     command = [
-        str(python), str(controller_path),
+        str(python), PYTHON_NO_BYTECODE_FLAG, str(controller_path),
         "--plan", str(plan_path),
         "--plan-sha256", plan_sha256,
         "--deployment-root", str(runtime.deployment_root),
@@ -511,7 +520,14 @@ def controller_environment(source: Mapping[str, str] = os.environ) -> dict[str, 
     allowed = tuple(CHILD_ENV_ALLOWLIST) + (
         "LC_CTYPE", "TZ", "PYTHONUTF8", "PYTHONIOENCODING",
     )
-    return {name: source[name] for name in allowed if source.get(name)}
+    environment = {name: source[name] for name in allowed if source.get(name)}
+    # The deployment is a closed, content-addressed input.  The controller
+    # runs from that tree, so inherited interpreter defaults must never create
+    # __pycache__ directories or .pyc files inside it.  Keep the environment
+    # guard in addition to the explicit ``-B`` interpreter flag so descendant
+    # Python processes inherit the same fail-closed policy.
+    environment[PYTHON_DONT_WRITE_BYTECODE] = "1"
+    return environment
 
 
 def matching_runtime_process_groups(match_tokens: Sequence[str]) -> set[int]:

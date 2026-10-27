@@ -58,6 +58,8 @@ OBSERVER_LOG_MAX_BYTES = 50 * 1024 * 1024
 NETWORK_CEILING = 2
 BROWSER_CEILING = 0
 MAX_WALL_SECONDS = 43_200
+PYTHON_NO_BYTECODE_FLAG = "-B"
+PYTHON_DONT_WRITE_BYTECODE = "PYTHONDONTWRITEBYTECODE"
 CHILD_ENV_ALLOWLIST = frozenset({
     "PATH", "HOME", "TMPDIR", "LANG", "LC_ALL",
     "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE",
@@ -1343,7 +1345,7 @@ class SequenceController:
             assert lane.expected_requests is not None
             runner = self.runtime.automation_root / "ops/run_pure_discovery_diagnostic.py"
             return [
-                str(self.runtime.python), str(runner),
+                str(self.runtime.python), PYTHON_NO_BYTECODE_FLAG, str(runner),
                 "--automation-root", str(self.runtime.automation_root),
                 "--source-file", str(lane.adapter.path),
                 "--source-sha256", lane.adapter.sha256,
@@ -1356,7 +1358,7 @@ class SequenceController:
         assert lane.exact_input is not None and lane.parent is not None
         observer = self.runtime.automation_root / "scripts/parallel_observe_pure.py"
         return [
-            str(self.runtime.python), str(observer),
+            str(self.runtime.python), PYTHON_NO_BYTECODE_FLAG, str(observer),
             "--automation-root", str(self.runtime.automation_root),
             "--source-file", str(lane.adapter.path),
             "--start", lane.start.isoformat(),
@@ -1375,6 +1377,12 @@ class SequenceController:
         }
         env["PYTHONPATH"] = str(self.runtime.automation_root)
         env["SCRAPER_BOUNDED_OBSERVATION"] = "1"
+        # Exact and diagnostic children import adapters from the immutable
+        # deployment.  Force bytecode writes off even if an inherited host
+        # environment would otherwise permit them.  ``build_command`` also
+        # supplies ``-B`` so both the direct child and any Python descendants
+        # remain isolated from the deployment tree.
+        env[PYTHON_DONT_WRITE_BYTECODE] = "1"
         return env
 
     def stale_lane_outcome(self, lane: LaneSpec, start_path: Path, terminal_path: Path) -> LaneResult:

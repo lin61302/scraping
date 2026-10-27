@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import stat
 import sys
 import tempfile
 import time
@@ -18,6 +20,25 @@ from ops import unattended_exact_observation_sequence as sequence
 
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def deployment_snapshot(root: Path) -> tuple[tuple[object, ...], ...]:
+    """Return a byte, mode, and directory-closure snapshot without imports."""
+
+    rows: list[tuple[object, ...]] = []
+    for path in (root, *sorted(root.rglob("*"))):
+        relative = "." if path == root else path.relative_to(root).as_posix()
+        info = path.lstat()
+        mode = stat.S_IMODE(info.st_mode)
+        if path.is_symlink():
+            rows.append((relative, "symlink", mode, os.readlink(path)))
+        elif path.is_dir():
+            rows.append((relative, "directory", mode))
+        elif path.is_file():
+            rows.append((relative, "file", mode, info.st_size, sha(path)))
+        else:
+            rows.append((relative, "other", mode))
+    return tuple(rows)
 
 
 class Fixture:
@@ -166,6 +187,15 @@ def test_exact_command_has_private_url_and_parent_pins_but_no_discovery_mode():
         )
         facts = controller.exact_input_facts(lane)
         command = controller.build_command(lane, fixture.root / "lane-output")
+        assert command[:3] == [
+            str(fixture.runtime.python),
+            sequence.PYTHON_NO_BYTECODE_FLAG,
+            str(fixture.scripts / "parallel_observe_pure.py"),
+        ]
+        assert (
+            controller.child_environment()[sequence.PYTHON_DONT_WRITE_BYTECODE]
+            == "1"
+        )
         assert facts["count"] == 2
         assert "--urls-file" in command
         assert "--parent-run-dir" in command
@@ -175,6 +205,52 @@ def test_exact_command_has_private_url_and_parent_pins_but_no_discovery_mode():
         fixture.input.write_text("https://example.test/a\n", encoding="utf-8")
         with pytest.raises(sequence.PlanError, match="SHA-256"):
             controller.exact_input_facts(lane)
+
+
+@pytest.mark.parametrize("kind", ("exact_urls", "discovery_diagnostic"))
+def test_controller_child_python_preserves_deployment_closure(kind):
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        plan = fixture.load()
+        lane = plan.phases[0].lanes[0]
+        controller = sequence.SequenceController(
+            plan, fixture.runtime, capacity_reporter=lambda: green_report(),
+        )
+        if kind == "discovery_diagnostic":
+            lane = replace(
+                lane,
+                lane_id="discovery-one",
+                kind="discovery_diagnostic",
+                expected_requests={"total": 1, "robots": 1, "inventory": 0},
+                exact_input=None,
+                exact_input_count=None,
+                parent=None,
+                derivation_reason=None,
+                repair_class=None,
+            )
+            runner = fixture.ops / "run_pure_discovery_diagnostic.py"
+        else:
+            runner = fixture.scripts / "parallel_observe_pure.py"
+        runner.write_text(
+            "from adapters.TST import source\n"
+            "assert source.Config.source_name == 'example.test'\n",
+            encoding="utf-8",
+        )
+        command = controller.build_command(lane, fixture.root / "lane-output")
+        environment = controller.child_environment()
+        deployment_before = deployment_snapshot(fixture.deployment)
+        child = sequence.CappedChild(command, environment, fixture.root / "child.log")
+        process = child.start()
+        assert process.wait(timeout=10) == 0
+        proof = child.finish()
+        assert proof["drain_thread_quiescent"] is True
+        assert command[:2] == [
+            str(fixture.runtime.python), sequence.PYTHON_NO_BYTECODE_FLAG,
+        ]
+        assert environment[sequence.PYTHON_DONT_WRITE_BYTECODE] == "1"
+        assert deployment_snapshot(fixture.deployment) == deployment_before
+        assert not list(fixture.deployment.rglob("__pycache__"))
+        assert not list(fixture.deployment.rglob("*.py[co]"))
 
 
 def test_capped_child_drains_all_output_but_keeps_only_the_cap():

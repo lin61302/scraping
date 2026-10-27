@@ -27,6 +27,25 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def deployment_snapshot(root: Path) -> tuple[tuple[object, ...], ...]:
+    """Return a byte, mode, and directory-closure snapshot without imports."""
+
+    rows: list[tuple[object, ...]] = []
+    for path in (root, *sorted(root.rglob("*"))):
+        relative = "." if path == root else path.relative_to(root).as_posix()
+        info = path.lstat()
+        mode = stat.S_IMODE(info.st_mode)
+        if path.is_symlink():
+            rows.append((relative, "symlink", mode, os.readlink(path)))
+        elif path.is_dir():
+            rows.append((relative, "directory", mode))
+        elif path.is_file():
+            rows.append((relative, "file", mode, info.st_size, sha(path)))
+        else:
+            rows.append((relative, "other", mode))
+    return tuple(rows)
+
+
 def private_dir(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     path.chmod(0o700)
@@ -391,6 +410,7 @@ class LauncherFixture:
 
 def test_preflight_is_read_only_and_pins_exact_contract(tmp_path):
     fixture = LauncherFixture(tmp_path)
+    deployment_before = deployment_snapshot(fixture.deployment)
     with mock.patch.object(launcher, "local_capacity_report", return_value=green_capacity()):
         preflight = launcher.public_preflight(launcher.prepare(fixture.args()))
     assert preflight["status"] == "pass"
@@ -402,6 +422,16 @@ def test_preflight_is_read_only_and_pins_exact_contract(tmp_path):
     assert list(fixture.operation.iterdir()) == []
     assert not (fixture.receipts / preflight["sequence_id"]).exists()
     assert not (fixture.output / preflight["sequence_id"]).exists()
+    assert deployment_snapshot(fixture.deployment) == deployment_before
+
+
+def test_launcher_disables_bytecode_before_deployment_local_imports():
+    source = launcher.LAUNCHER_PATH.read_text(encoding="utf-8")
+    guard = "sys.dont_write_bytecode = True"
+    first_local_import = "from host_capacity_guard import"
+
+    assert launcher.sys.dont_write_bytecode is True
+    assert source.index(guard) < source.index(first_local_import)
 
 
 def test_preflight_only_cli_never_marks_or_spawns(tmp_path, capsys):
@@ -421,12 +451,100 @@ def test_controller_command_is_local_exact_and_never_resume(tmp_path):
     with mock.patch.object(launcher, "local_capacity_report", return_value=green_capacity()):
         prepared = launcher.prepare(fixture.args())
     command = prepared["command"]
+    assert command[:3] == [
+        str(fixture.args().python),
+        launcher.PYTHON_NO_BYTECODE_FLAG,
+        str(fixture.ops / "unattended_exact_observation_sequence.py"),
+    ]
     assert str(fixture.ops / "unattended_exact_observation_sequence.py") in command
     assert command[command.index("--plan-sha256") + 1] == fixture.plan_sha256
     assert command[command.index("--deployment-root") + 1] == str(fixture.deployment)
     assert command[command.index("--allowed-parent-root") + 1] == str(fixture.parents)
     assert "--resume" not in command
     assert "ssh" not in command
+
+
+def test_dependency_probe_cannot_write_bytecode_into_deployment(tmp_path):
+    """Regress the dotted find_spec probe that contaminated a frozen packet."""
+
+    fixture = LauncherFixture(tmp_path)
+    deployment_before = deployment_snapshot(fixture.deployment)
+    environment = launcher.controller_environment({
+        "PATH": os.environ.get("PATH", ""),
+        launcher.PYTHON_DONT_WRITE_BYTECODE: "0",
+    })
+    environment["PYTHONPATH"] = str(fixture.automation)
+    completed = subprocess.run(
+        [
+            sys.executable,
+            launcher.PYTHON_NO_BYTECODE_FLAG,
+            "-c",
+            (
+                "import importlib.util; "
+                "assert importlib.util.find_spec('adapters.TST.source') is not None"
+            ),
+        ],
+        cwd=fixture.root,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert environment[launcher.PYTHON_DONT_WRITE_BYTECODE] == "1"
+    assert deployment_snapshot(fixture.deployment) == deployment_before
+    assert not list(fixture.deployment.rglob("__pycache__"))
+    assert not list(fixture.deployment.rglob("*.py[co]"))
+
+
+def test_controller_startup_command_preserves_deployment_closure(tmp_path):
+    fixture = LauncherFixture(tmp_path)
+    dependency = fixture.ops / "bytecode_probe_dependency.py"
+    controller = fixture.ops / "bytecode_probe_controller.py"
+    dependency.write_text("VALUE = 1\n", encoding="utf-8")
+    controller.write_text(
+        "import bytecode_probe_dependency\n"
+        "assert bytecode_probe_dependency.VALUE == 1\n",
+        encoding="utf-8",
+    )
+    dependency.chmod(0o644)
+    controller.chmod(0o644)
+    runtime = launcher.RuntimePaths(
+        python=Path(sys.executable),
+        deployment_root=fixture.deployment,
+        automation_root=fixture.automation,
+        output_root=fixture.output,
+        receipt_root=fixture.receipts,
+        host_lock_path=fixture.locks / "exact.lock",
+        allowed_parent_roots=(fixture.parents,),
+    )
+    command = launcher.build_controller_command(
+        python=runtime.python,
+        controller_path=controller,
+        plan_path=fixture.plan,
+        plan_sha256=fixture.plan_sha256,
+        runtime=runtime,
+    )
+    environment = launcher.controller_environment({
+        "PATH": os.environ.get("PATH", ""),
+    })
+    deployment_before = deployment_snapshot(fixture.deployment)
+    completed = subprocess.run(
+        command,
+        cwd=fixture.deployment,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert command[:3] == [
+        str(runtime.python), launcher.PYTHON_NO_BYTECODE_FLAG, str(controller),
+    ]
+    assert environment[launcher.PYTHON_DONT_WRITE_BYTECODE] == "1"
+    assert deployment_snapshot(fixture.deployment) == deployment_before
+    assert not list(fixture.deployment.rglob("__pycache__"))
+    assert not list(fixture.deployment.rglob("*.py[co]"))
 
 
 def test_single_use_detached_launch_is_private_and_redacted(tmp_path, monkeypatch):
@@ -439,6 +557,8 @@ def test_single_use_detached_launch_is_private_and_redacted(tmp_path, monkeypatc
         assert kwargs["start_new_session"] is True
         assert kwargs["close_fds"] is True
         assert "MONGODB_URI" not in kwargs["env"]
+        assert kwargs["env"][launcher.PYTHON_DONT_WRITE_BYTECODE] == "1"
+        assert command[:2] == [str(fixture.args().python), "-B"]
         captured["command"] = command
         sequence_dir = private_dir(fixture.receipts / "local-exact-launcher-fixture")
         write_private(
