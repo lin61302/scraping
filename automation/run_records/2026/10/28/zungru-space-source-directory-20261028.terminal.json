@@ -1,0 +1,65 @@
+{
+  "continuity_space": {
+    "changed": false,
+    "head": "f164108f8be83d7b8e06e6c90887b77f0ba66a3a",
+    "repository": "ZR/mlp-mleed-source-tracker"
+  },
+  "event": "terminal",
+  "github_prepublication": {
+    "code_and_tests_commit": "f166844e8f42d4702ff1a4ae52c070da8ef3d79e",
+    "code_and_tests_manifest_sha256": "8e7d47cb23747cdc76013202b830cd83162e0877d31e86627e618b42a9e6d6fc",
+    "compatibility_fix_commit": "c2b398dacffc8abaf7a43a25862b9c7ef56dbed0",
+    "compatibility_fix_manifest_sha256": "eb310c6b034b3db30f03b7ff9dc035ac0f625e4a5b21be30d134d04dbf9b630a"
+  },
+  "kind": "sanitized_immutable_hf_source_tracker_ui_publication_provenance",
+  "occurred_at_utc": "2026-10-28T18:38:49Z",
+  "outcome": "succeeded",
+  "public_space": {
+    "app_js_http": 200,
+    "app_js_sha256": "accb47e94d2c900888aef60743132cb0645ed9dfbe6105f201a8f36493abf9d9",
+    "commit": "ee9775bf37fd3dc45a16723f09723f9158fb3d92",
+    "page_http": 200,
+    "remote_app_js_byte_identical": true,
+    "remote_snapshot_byte_identical": true,
+    "repository": "zungru/mlp-mleed-source-tracker",
+    "runtime_state": "RUNNING",
+    "snapshot_http": 200,
+    "snapshot_sha256": "4405b199faddf1308a73cce484ffc4a75ff72ebabd2dfe7552e09af164a96b55",
+    "static_http": 200
+  },
+  "schema_version": 1,
+  "source_directory": {
+    "country_groups": 73,
+    "features": [
+      "source-first landing view",
+      "status band",
+      "separate recorded, operational, first-pass, and strict boundaries",
+      "current processing stage",
+      "source-local next action",
+      "source detail drawer",
+      "map and shared-source detail integration"
+    ],
+    "position_counts": {
+      "blocked": 11,
+      "complete_through_target": 9,
+      "inspected_verification_pending": 98,
+      "not_inspected": 524,
+      "verified_through_earlier_boundary": 11
+    },
+    "sources": 653
+  },
+  "validation": {
+    "focused_tests": {
+      "passed": 4,
+      "total": 4
+    },
+    "javascript_syntax_passed": true,
+    "live_visual_review_passed": true,
+    "privacy_tests": {
+      "passed": 24,
+      "total": 24
+    },
+    "source_drawer_review_passed": true,
+    "status_filter_review_passed": true
+  }
+}
