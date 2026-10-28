@@ -56,6 +56,17 @@
     return value === "Review" ? "Agent follow-up" : (value || "Not assessed");
   }
 
+  function displayNarrative(value) {
+    return String(value || "")
+      .replace(/\bneeds_review\b/gi, "agent_follow_up")
+      .replace(/\bverification remains pending\b/gi, "agent verification is queued")
+      .replace(/\bverification pending\b/gi, "agent verification queued")
+      .replace(/\bclassified for review\b/gi, "classified for agent follow-up")
+      .replace(/\bneeds quick check\b/gi, "agent follow-up queued")
+      .replace(/\b(?:pending|awaiting) (?:human |user )?review\b/gi, "agent follow-up queued")
+      .replace(/\b(?:human|user) (?:review|check|verification|approval|sign-off)\b/gi, "agent verification");
+  }
+
   function agentQueueAction(row) {
     let action = String(row.next_action || "No next action recorded").trim();
     action = action
@@ -365,7 +376,9 @@
       sourceCountSeries,
       countSeriesChart,
       displayAttentionState,
+      displayNarrative,
       agentQueueAction,
+      csvExportValue,
     };
     return;
   }
@@ -801,7 +814,7 @@
   function countSeriesChart(row) {
     const series = sourceCountSeries(row);
     if (!series || !Array.isArray(series.points) || !series.points.length) {
-      return `<div class="count-chart-empty"><strong>Monthly count series pending</strong><p>Agent queue · publish the next reviewed source-level scrape and TCG count snapshot. Source work continues autonomously while aggregate data is prepared.</p></div>`;
+      return `<div class="count-chart-empty"><strong>Monthly count series pending</strong><p>Agent queue · publish the next agent-verified source-level scrape and TCG count snapshot. Source work continues autonomously while aggregate data is prepared.</p></div>`;
     }
     const points = series.points;
     const hasScrape = points.some(point => point[1] !== null && point[1] !== undefined);
@@ -861,7 +874,7 @@
       <h4 class="detail-section-title">Scraping and TCG counts</h4>
       ${countSeriesChart(r)}
       <div class="detail-grid">${[["First-pass target",r.first_pass_target||data.meta.first_pass_target_end||"Not set"],["Current-month partial",r.current_month_partial_through||"None"],["Current stage",displayPipelineStage(r)],["Method",r.method||"Not recorded"],["Last checked",r.last_checked||"Not recorded"],["Language",r.language||"Not recorded"]].map(([k,v])=>`<div class="detail-item"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join("")}</div>
-      <div class="detail-copy"><section><h4>First-pass note</h4><p>${esc(r.first_pass_note||"First-pass inspection pending")}</p></section><section><h4>Progress</h4><p>${esc(r.scraping_progress||"No progress note")}</p></section><section><h4>Problem summary</h4><p>${esc(r.problem_summary||"No problem recorded")}</p></section><section><h4>Agent queue / next action</h4><p>${esc(agentQueueAction(r))}</p></section></div>`;
+      <div class="detail-copy"><section><h4>First-pass note</h4><p>${esc(displayNarrative(r.first_pass_note||"First-pass inspection pending"))}</p></section><section><h4>Progress</h4><p>${esc(displayNarrative(r.scraping_progress||"No progress note"))}</p></section><section><h4>Problem summary</h4><p>${esc(displayNarrative(r.problem_summary||"No problem recorded"))}</p></section><section><h4>Agent queue / next action</h4><p>${esc(agentQueueAction(r))}</p></section></div>`;
     drawer.classList.add("open");
     drawer.setAttribute("aria-hidden", "false");
     $("#detail-backdrop").classList.add("open");
@@ -873,16 +886,23 @@
   function renderAttention() {
     const active = data.sources.filter(r=>r.attention_state === "Active");
     const blockers = data.sources.filter(r=>["Blocked","Review"].includes(r.attention_state));
-    const workHtml = rows => rows.length ? rows.map(r=>`<div class="work-item"><div class="work-top"><span><span class="work-source">${esc(r.source)}</span> <span class="work-country">${esc(r.country)}</span></span>${pill(displayAttentionState(r.attention_state))}</div><span class="work-label">Problem</span><p>${esc(r.problem_summary||r.scraping_progress||"No detail recorded")}</p><span class="work-label">Agent queue / next action</span><p>${esc(agentQueueAction(r))}</p></div>`).join("") : '<p class="empty">Nothing in this queue.</p>';
+    const workHtml = rows => rows.length ? rows.map(r=>`<div class="work-item"><div class="work-top"><span><span class="work-source">${esc(r.source)}</span> <span class="work-country">${esc(r.country)}</span></span>${pill(displayAttentionState(r.attention_state))}</div><span class="work-label">Problem</span><p>${esc(displayNarrative(r.problem_summary||r.scraping_progress||"No detail recorded"))}</p><span class="work-label">Agent queue / next action</span><p>${esc(agentQueueAction(r))}</p></div>`).join("") : '<p class="empty">Nothing in this queue.</p>';
     $("#active-list").innerHTML=workHtml(active); $("#blocker-list").innerHTML=workHtml(blockers);
     $("#active-count").textContent=active.length; $("#blocker-count").textContent=blockers.length;
   }
   function renderCycle() { $("#cycle-list").innerHTML=data.waves.map(w=>`<article class="wave-card"><span class="wave-number">Wave ${w.wave}</span><strong>${esc(w.countries)}</strong><p>${esc(w.rule)}</p></article>`).join(""); }
 
   function csvEscape(value) { const text=String(value??""); return /[",\n]/.test(text) ? `"${text.replace(/"/g,'""')}"` : text; }
+  function csvExportValue(row, key) {
+    if (key === "first_pass_state") return displaySourcePosition(row[key]);
+    if (key === "attention_state") return displayAttentionState(row[key]);
+    if (key === "next_action") return agentQueueAction(row);
+    if (["first_pass_note", "problem_summary", "needs_revisit"].includes(key)) return displayNarrative(row[key]);
+    return row[key];
+  }
   function exportCsv() {
     const keys=["country","source","project","recorded_notion_boundary","first_pass_target","first_pass_verified_through","current_month_partial_through","first_pass_state","first_pass_note","baseline_status","scrape_record_through","scrape_record_state","scrape_record_basis","boundary_check","scrape_verified_through","tcg_record_through","tcg_record_state","tcg_record_basis","stage","last_checked","method","pipeline_state","attention_state","needs_revisit","patchtools_status","pretcg_status","downstream_ready","problem_summary","next_action"];
-    const csv=[keys.join(","),...state.filtered.map(r=>keys.map(k=>csvEscape(r[k])).join(","))].join("\n");
+    const csv=[keys.join(","),...state.filtered.map(r=>keys.map(k=>csvEscape(csvExportValue(r,k))).join(","))].join("\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); const a=document.createElement("a"); a.href=url;a.download="source_tracker_filtered.csv";a.click();URL.revokeObjectURL(url);
   }
 
@@ -890,6 +910,9 @@
     fillSelect("#filter-country",data.sources.map(r=>r.country)); fillSelect("#filter-project",data.sources.map(r=>r.project)); fillSelect("#filter-baseline",data.sources.map(r=>r.baseline_status)); fillSelect("#filter-attention",data.sources.map(r=>r.attention_state)); fillSelect("#filter-first-pass",data.sources.map(r=>r.first_pass_state));
     $$("#filter-attention option").forEach(option => {
       if (option.value) option.textContent = displayAttentionState(option.value);
+    });
+    $$("#filter-first-pass option").forEach(option => {
+      if (option.value) option.textContent = displaySourcePosition(option.value);
     });
     ["#source-search","#filter-country","#filter-project","#filter-baseline","#filter-attention","#filter-first-pass"].forEach(id=>$(id).addEventListener(id.includes("search")?"input":"change",applySourceFilters));
     $("#country-search").addEventListener("input",renderCountries);

@@ -76,6 +76,12 @@ class SnapshotTests(unittest.TestCase):
     def test_static_assets_reference_safe_snapshot(self):
         html=(ROOT/"index.html").read_text(encoding="utf-8")
         self.assertIn('data/tracker_snapshot.js',html);self.assertIn('data/world_110m.js',html);self.assertIn('app.js',html);self.assertNotRegex(html,r'https?://')
+    def test_attention_copy_is_agent_owned(self):
+        html=(ROOT/"index.html").read_text(encoding="utf-8")
+        self.assertIn("Agent work queue",html)
+        self.assertIn("Blockers and follow-ups",html)
+        self.assertNotIn("Decision needed",html)
+        self.assertNotIn("Blockers and reviews",html)
     def test_map_geometry_covers_all_national_countries(self):
         raw=(ROOT/"data"/"world_110m.js").read_text(encoding="utf-8").strip()
         self.assertTrue(raw.startswith("window.WORLD_GEOMETRY=") and raw.endswith(";"))

@@ -173,6 +173,11 @@ def test_source_drawer_renders_count_chart_or_pending_state_and_agent_queue():
     ):
         assert required in app
 
+    assert '$$("#filter-attention option").forEach' in app
+    assert "option.textContent = displayAttentionState(option.value)" in app
+    assert '$$("#filter-first-pass option").forEach' in app
+    assert "option.textContent = displaySourcePosition(option.value)" in app
+
 
 def test_count_chart_and_agent_queue_helpers_are_deterministic_in_javascript():
     node = shutil.which("node")
@@ -199,6 +204,12 @@ const api = window.SOURCE_TRACKER_TEST_API;
 const row = {{project:'MLEED', source:'example.test', next_action:'Review and verify output', attention_state:'Review'}};
 const missing = {{project:'MLP', source:'missing.test', next_action:'Run counts', attention_state:'Backlog'}};
 const legacyHumanGate = {{next_action:'Wait for user approval and human check', attention_state:'Review'}};
+const legacyNarrative = {{
+  first_pass_state:'Inspected; verification pending',
+  first_pass_note:'Orchestrator task status was needs_review; verification remains pending',
+  attention_state:'Review', needs_revisit:'Needs quick check',
+  problem_summary:'Classified for review', next_action:'Wait for user approval',
+}};
 process.stdout.write(JSON.stringify({{
   key: api.sourceCountKey(row),
   found: api.sourceCountSeries(row).through,
@@ -208,6 +219,15 @@ process.stdout.write(JSON.stringify({{
   position: api.displaySourcePosition('Inspected; verification pending'),
   action: api.agentQueueAction(row),
   migratedAction: api.agentQueueAction(legacyHumanGate),
+  narrative: api.displayNarrative(legacyNarrative.first_pass_note),
+  csv: {{
+    firstPass: api.csvExportValue(legacyNarrative, 'first_pass_state'),
+    note: api.csvExportValue(legacyNarrative, 'first_pass_note'),
+    attention: api.csvExportValue(legacyNarrative, 'attention_state'),
+    revisit: api.csvExportValue(legacyNarrative, 'needs_revisit'),
+    problem: api.csvExportValue(legacyNarrative, 'problem_summary'),
+    action: api.csvExportValue(legacyNarrative, 'next_action'),
+  }},
 }}));
 """
     completed = subprocess.run(
@@ -226,4 +246,10 @@ process.stdout.write(JSON.stringify({{
     assert "user" not in result["migratedAction"].lower()
     assert "human" not in result["migratedAction"].lower()
     assert "agent" in result["migratedAction"].lower()
+    rendered = json.dumps({"narrative": result["narrative"], "csv": result["csv"]}).lower()
+    for legacy in ("needs_review", "verification pending", "verification remains pending", "classified for review", "needs quick check", "user approval"):
+        assert legacy not in rendered
+    assert result["csv"]["firstPass"] == "Inspected; agent verification queued"
+    assert result["csv"]["attention"] == "Agent follow-up"
+    assert "agent" in rendered
 
