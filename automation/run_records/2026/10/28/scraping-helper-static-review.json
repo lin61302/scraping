@@ -1,0 +1,104 @@
+{
+  "aggregate": {
+    "exceptions": 1,
+    "passes": 1240,
+    "slb_unsealed_parent_identities": 203,
+    "unresolved_quarantines": 395,
+    "verified_exclusions": 546
+  },
+  "created_at_utc": "2026-10-28T18:48:11.340828+00:00",
+  "effects": {
+    "closed_runtime_read": false,
+    "coverage_advanced": false,
+    "execution_packet_prepared": false,
+    "human_verification_required": false,
+    "production_writes": false,
+    "source_work_run": false,
+    "space_published": false,
+    "tracker_changed": false
+  },
+  "event": "sealed_residual_triage_and_tracker_crosscheck",
+  "evidence_sha256": {
+    "extraction_independent_audit": "adf3af519be363f1701a9db1c250b8c2e006693a9ae6a72911e862b6d2dc3ec9",
+    "extraction_review": "188e3b2e06e487eccd96c2771666ad342287ab0afb5be4c0a5ae81df17b95fb9",
+    "extraction_seal": "38062e985a7ae18ad74d03cca5e189c51fd93bd4df352c323e591bbba0eedc19",
+    "private_handoff": "b9a4d9dde05511acf6147e47e56029414d529870717db3cc991b76f9bd7227d6",
+    "private_residual_index": "9813fbdf75ffb4f8cdc5c38ef38858bd2ef05fab2b6ceb1ed9f3a0b011d1e702"
+  },
+  "kind": "sanitized_static_scraping_support_review",
+  "limitations": {
+    "field_values_not_retained_in_sealed_ledgers": true,
+    "redirect_destination_not_retained": true,
+    "slb_exact_parent_ledger_missing": true,
+    "unresolved_date_out_of_range_overlap": 68,
+    "unresolved_without_issue_codes": 255
+  },
+  "schema_version": 1,
+  "slb_failure_distinction": {
+    "expected_rows": 203,
+    "later_extraction": "nullable_post_run_pin_field_type_mismatch",
+    "original_lane": "child_exit_nonzero",
+    "sealed_rows": 0,
+    "underlying_child_exception_established": false
+  },
+  "sources": {
+    "PAN": {
+      "exclusive_parser_error_groups": {
+        "insufficient_visible_maintext": 91,
+        "visible_vs_jsonld_title_disagreement": 130
+      },
+      "overlapping_issue_code_counts": {
+        "date_out_of_range": 50,
+        "maintext_too_short": 92
+      },
+      "partition_counts": {
+        "all_outcomes": 1048,
+        "exceptions": 0,
+        "preserved_passes": 617,
+        "unresolved_quarantines": 221,
+        "verified_exclusions": 210
+      },
+      "unresolved_without_issue_codes": 99
+    },
+    "SSD": {
+      "exclusive_parser_error_groups": {
+        "meta_vs_blogposting_publication_date_disagreement": 95,
+        "visible_vs_blogposting_headline_disagreement": 41,
+        "visible_vs_blogposting_headline_disagreement;meta_vs_blogposting_publication_date_disagreement": 7
+      },
+      "overlapping_issue_code_counts": {
+        "date_out_of_range": 15
+      },
+      "partition_counts": {
+        "all_outcomes": 802,
+        "exceptions": 1,
+        "preserved_passes": 395,
+        "unresolved_quarantines": 143,
+        "verified_exclusions": 263
+      },
+      "unresolved_without_issue_codes": 128
+    },
+    "UGA": {
+      "exclusive_parser_error_groups": {
+        "visible_vs_jsonld_title_disagreement": 31
+      },
+      "overlapping_issue_code_counts": {
+        "date_out_of_range": 3
+      },
+      "partition_counts": {
+        "all_outcomes": 332,
+        "exceptions": 0,
+        "preserved_passes": 228,
+        "unresolved_quarantines": 31,
+        "verified_exclusions": 73
+      },
+      "unresolved_without_issue_codes": 28
+    }
+  },
+  "verification": {
+    "one_based_identity_references": true,
+    "residual_review_index_rows": 396,
+    "sealed_ledger_hash_count": 15,
+    "tracker_field_comparisons": 32
+  }
+}
