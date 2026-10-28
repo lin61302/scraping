@@ -1,0 +1,150 @@
+{
+  "aggregate": {
+    "exceptions": 1,
+    "expected_sequence_identities": 2385,
+    "preserved_passes": 1240,
+    "sealed_identities": 2182,
+    "slb_unsealed_identities": 203,
+    "unresolved_quarantines": 395,
+    "verified_exclusions": 546
+  },
+  "boundary_effect": {
+    "coverage_or_verified_date_advanced": false,
+    "downstream_admission_established": false,
+    "source_completed_through_target": false
+  },
+  "completed_at_utc": "2026-10-28T18:21:35.138019Z",
+  "event": "one_time_identity_extraction",
+  "evidence_sha256": {
+    "extraction_review": "188e3b2e06e487eccd96c2771666ad342287ab0afb5be4c0a5ae81df17b95fb9",
+    "extraction_seal": "38062e985a7ae18ad74d03cca5e189c51fd93bd4df352c323e591bbba0eedc19",
+    "independent_audit": "adf3af519be363f1701a9db1c250b8c2e006693a9ae6a72911e862b6d2dc3ec9",
+    "input_artifact_hash_set": "f30470db4f4d09aebc54b6969a1663c190157f13e9c8ccc4423d471378184eab",
+    "prerequisite_status": "f68adf303dd37a3d0724f663461198ac1637c9e179e5286304ef33c3afb853fb",
+    "static_exact_identity_proof": "bab5f7c5513e55dcf88d0c324e55d2d086dfe7588a0439c1e1cc48742ea68dda",
+    "static_sequence_review_correction": "2d00e6effb13b569df3a3d5ba871ade6ec32a91afaf51a5b0f7fc1fc13f1afea",
+    "static_sequence_terminal_review": "38059ef6c5f976151ed615649d12f119140599898e82d89782211b871988e22d"
+  },
+  "execution_mode": "read_only_evidence_extraction",
+  "independent_audit": {
+    "checks_failed": 0,
+    "checks_passed": 145,
+    "checks_total": 145,
+    "result": "approved_partial_seal_with_explicit_slb_gap"
+  },
+  "kind": "sanitized_immutable_bounded_identity_extraction_provenance",
+  "outcome": "approved_partial_seal_with_explicit_slb_gap",
+  "prerequisite_status": {
+    "PAN": "blocked_pending_source_local_review_of_exact_unresolved_identities",
+    "SLB": "blocked_exact_identity_ledger_not_sealed_after_fail_closed_extraction_interruption",
+    "SSD": "blocked_pending_source_local_review_of_exact_unresolved_identities",
+    "UGA": "blocked_pending_source_local_review_of_exact_unresolved_identities",
+    "downstream_execution_packet_ready": false
+  },
+  "preservation_requirements": {
+    "closed_runtime_must_not_be_read_again": true,
+    "keep_raw_identity_ledgers_private": true,
+    "no_execution_packet_prepared_in_this_window": true,
+    "no_full_input_rerun_or_rediscovery": true,
+    "preserve_all_1240_passing_identities": true
+  },
+  "production_writes": false,
+  "schema_version": 1,
+  "scope": {
+    "capacity_guard_invoked": false,
+    "closed_artifacts_read_at_most_once": true,
+    "execution_packet_prepared": false,
+    "preflight_authorization_launcher_controller_invoked": false,
+    "process_inspection_performed": false,
+    "raw_identities_published": false,
+    "read_only": true,
+    "repair_plan_prepared": false,
+    "runtime_modified": false,
+    "runtime_root_created": false,
+    "source_network_or_ssh_work_run": false
+  },
+  "sealed_source_partitions": [
+    {
+      "country_code": "PAN",
+      "counts": {
+        "exceptions": 0,
+        "preserved_passes": 617,
+        "sealed": 1048,
+        "unresolved_quarantines": 221,
+        "verified_exclusions": 210
+      },
+      "evidence_sha256": {
+        "all_outcomes_ledger": "4c62921ac355d11e3087468fbb45d8245cf534fe871afbe1357a1bb902f01b85",
+        "exceptions_ledger": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "lane_terminal": "a0fdb480f4d329cb974ad746b2b736d8e6f3d68258f6f6c6a424f7546b3a9a93",
+        "parent_partition": "d8f100249b71bcadc9f00eed26496e0b9a4bd0d5d5f3519b86f992051fa80997",
+        "preserved_passes_ledger": "42a23d219bd233c8e94b70059c5d68ad7133aac6f56ef336999aeb61ebc8132d",
+        "unresolved_quarantines_ledger": "7bc9588901e62b84d56a146b006d3504facc2e71ef373e652ebf146952d9de35",
+        "verified_exclusions_ledger": "347435a3c0a92c15527b0694842975b6f42af9f29892e06ac6c4066bd454cfdf"
+      },
+      "future_handoff_status": "blocked_pending_source_local_review_of_exact_unresolved_identities",
+      "partition_complete": true
+    },
+    {
+      "country_code": "SSD",
+      "counts": {
+        "exceptions": 1,
+        "preserved_passes": 395,
+        "sealed": 802,
+        "unresolved_quarantines": 143,
+        "verified_exclusions": 263
+      },
+      "evidence_sha256": {
+        "all_outcomes_ledger": "fbc1b634a2558b8f01a118783b23d35adff4b10b73d9875d1baa5e1ff94a4dab",
+        "exceptions_ledger": "b5b6fb57ae3593d9ea417feaccd312fa776716804cb07186d85ea6f2721e385b",
+        "lane_terminal": "a28bc56801b562d646d56d9447d600064f739ea862181457ded0cbf6edacdb98",
+        "parent_partition": "9d1560a75c2aad6cf10ceec2f4b5eec0df5b5691a9040cbe709bf8d599b03b9a",
+        "preserved_passes_ledger": "39c4b02c0f716f6919a660aa3e865774d1e57af03fa740c0b7087a493ecd4475",
+        "unresolved_quarantines_ledger": "dfd8fd6a9bd0f7d7953042ebe44ef5ae182d90a91246efd54250e3c2e98a8d01",
+        "verified_exclusions_ledger": "06713e9f9deeff2614fd76e577678712bbbfbee378ea1bf49943a653b9bfb47b"
+      },
+      "future_handoff_status": "blocked_pending_source_local_review_of_exact_unresolved_identities",
+      "partition_complete": true
+    },
+    {
+      "country_code": "UGA",
+      "counts": {
+        "exceptions": 0,
+        "preserved_passes": 228,
+        "sealed": 332,
+        "unresolved_quarantines": 31,
+        "verified_exclusions": 73
+      },
+      "evidence_sha256": {
+        "all_outcomes_ledger": "1973b33f3084542d96ba76ef49866f931aebe631b0ca0142a3bb2f3253b95977",
+        "exceptions_ledger": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "lane_terminal": "b8521cd682d0b44ba5f85a75b527290eac7589860da124a24e34462883e60426",
+        "parent_partition": "a2a413417e04f1842505ddcc7f58dd3ce8be806b45ef0d7fdb56801ff2d84ffd",
+        "preserved_passes_ledger": "2dc013142a06dd7d8e21952e337490c4048455d3884ec3d3b5a8fb15de5220ec",
+        "unresolved_quarantines_ledger": "3fb1d339a7081a5cf9a6f0b4a2ca4f8742492360836a6fda8e972f2307d2d8e4",
+        "verified_exclusions_ledger": "bda9c92186fbc5dac445888cd2cc4869785410ec2c677014ef4adf4bcfac7d02"
+      },
+      "future_handoff_status": "blocked_pending_source_local_review_of_exact_unresolved_identities",
+      "partition_complete": true
+    }
+  ],
+  "sequence_id": "local-exact-unstarted4-recovery4-20261027-through-20260930",
+  "slb_gap": {
+    "cause": "The extractor expected the post-run pin field to be an object, while the isolated child-failure receipt recorded null. The parent and receipt had already been consumed once, so evidence was not reread and no SLB identity rows were emitted.",
+    "closed_evidence_must_not_be_read_again": true,
+    "evidence_sha256": {
+      "extraction_gap": "883ddb127377db0d824b518dee9f5fdc62a3dc64fd0e15a3bfa5b04bcdf077b6",
+      "lane_terminal": "f45c27727c5cd5bc29b523e0f7261849fbae8a388448527556d4f154bc50476b",
+      "parent_partition": "107bd7da22cb4712142a586944c738294304ae367ed293e06b5f4e6ce105efce"
+    },
+    "expected_parent_identities": 203,
+    "extraction_interruption_class": "fail_closed_null_post_run_pin_field_type_mismatch",
+    "future_handoff_status": "blocked_exact_identity_ledger_not_sealed_after_fail_closed_extraction_interruption",
+    "must_not_be_inferred_or_reconstructed": true,
+    "partition_complete": false,
+    "sealed_identity_rows": 0,
+    "terminal_contract_error": "child_exit_nonzero",
+    "terminal_lane_state": "isolated_lane_failure"
+  },
+  "window_id": "2026-10-28_1415"
+}
