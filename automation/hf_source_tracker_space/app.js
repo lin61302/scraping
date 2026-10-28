@@ -531,7 +531,7 @@
       return aRank - bRank || a.source.localeCompare(b.source);
     }).map(row => `<article class="map-source-row" data-source-index="${data.sources.indexOf(row)}" tabindex="0" role="button" aria-label="Open ${esc(row.source)} source details">
       <div class="map-source-top"><strong>${esc(row.source)}</strong>${pill(sourcePosition(row))}</div>
-      <div class="map-source-dates"><span><b>Recorded Notion</b> ${esc(compactDate(row.recorded_notion_boundary))}</span><span><b>Operational through</b> ${esc(compactDate(sourceScrapeRecordDate(row)))}</span><span><b>First-pass verified</b> ${esc(sourceFirstPassDate(row) ? compactDate(sourceFirstPassDate(row)) : "Pending")}</span><span><b>Strict verified</b> ${esc(sourceCycleDate(row) ? compactDate(sourceCycleDate(row)) : "Not yet verified")}</span><span><b>Checked</b> ${esc(compactDate(row.last_checked))}</span></div>
+      <div class="map-source-dates"><span><b>Recorded Notion</b> ${esc(compactDate(row.recorded_notion_boundary))}</span><span><b>Operational through</b> ${esc(compactDate(sourceScrapeRecordDate(row)))}</span><span><b>First-pass verified</b> ${esc(sourceFirstPassDate(row) ? compactDate(sourceFirstPassDate(row)) : "Pending")}</span><span><b>Verified through</b> ${esc(sourceCycleDate(row) ? compactDate(sourceCycleDate(row)) : "Not yet verified")}</span><span><b>Checked</b> ${esc(compactDate(row.last_checked))}</span></div>
       <div class="map-source-pipeline"><span><b>Patchtools</b> ${esc(shortStageStatus(row.patchtools_status))}</span><span><b>Pre-TCG</b> ${esc(shortStageStatus(row.pretcg_status))}</span></div>
       <p><b>Next:</b> ${esc(row.next_action || conciseSourceState(row))}</p>
     </article>`).join("");
