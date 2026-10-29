@@ -217,12 +217,6 @@ def _blogposting(soup: BeautifulSoup, url: str) -> tuple[dict, dict]:
             kinds = kinds if isinstance(kinds, list) else [kinds]
             if "BlogPosting" in kinds:
                 candidates.append(item)
-    if len(candidates) == 1:
-        return candidates[0], {
-            "candidate_count": 1,
-            "canonical_match_count": int(url in _canonical_jsonld_identity(candidates[0])),
-            "selection": "only_blogposting",
-        }
     matching = [item for item in candidates if url in _canonical_jsonld_identity(item)]
     if len(matching) == 1:
         return matching[0], {

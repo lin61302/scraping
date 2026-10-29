@@ -234,6 +234,20 @@ def test_ssd_different_publisher_calendar_days_remain_error():
     assert article["field_evidence"]["publication_date_reconciliation"]["matched_same_publisher_calendar_day"] is False
 
 
+def test_ssd_single_noncanonical_blogposting_is_rejected():
+    url = "https://eyeradio.org/synthetic-noncanonical-story"
+    payload = _ssd_page(url).replace(
+        url.encode(), b"https://eyeradio.org/different-story",
+    )
+    article = eyeradio._parse_article_html(url, payload, response_url=url + "/")
+    assert "visible_vs_blogposting_headline_disagreement" in article["parser_error"]
+    assert article["field_evidence"]["blogposting_selection"] == {
+        "candidate_count": 1,
+        "canonical_match_count": 0,
+        "selection": "none_or_ambiguous",
+    }
+
+
 def test_ssd_ambiguous_blogposting_and_semantic_title_remain_errors():
     url = "https://eyeradio.org/synthetic-ambiguous-story"
     ambiguous = {
