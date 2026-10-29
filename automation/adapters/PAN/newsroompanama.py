@@ -1,8 +1,14 @@
 """Production-disabled bounded pure candidate for Newsroom Panama."""
 from __future__ import annotations
 
+import hashlib
+import html
 import os
+import re
+import unicodedata
 from datetime import date
+
+from bs4 import BeautifulSoup
 
 from adapters import candidate_common as common
 
@@ -42,7 +48,16 @@ CANDIDATE_SITEMAPS = (
 )
 EXPECTED_LANGUAGES = ("en",)
 TITLE_SELECTORS = ("main h1", "article h1", "h1")
-BODY_SELECTORS = ("main article", "article", ".entry-content", ".post-content", ".td-post-content")
+BODY_SELECTORS = (
+    "main article .entry-content",
+    "article .entry-content",
+    ".entry-content",
+    ".post-content",
+    ".td-post-content",
+    "[itemprop='articleBody']",
+    "main article",
+    "article",
+)
 
 RouteProfileUnverifiedError = common.RouteProfileUnverifiedError
 AccessBlockedError = common.AccessBlockedError
@@ -50,6 +65,95 @@ AccessBlockedError = common.AccessBlockedError
 
 def _request(url: str, *, max_bytes: int, timeout: int = 45):
     return common.bounded_request(url, allowed_hosts=ALLOWED_HOSTS, max_bytes=max_bytes, timeout=timeout)
+
+
+def _title_key(raw: object) -> str:
+    """Normalize only presentation differences; retain every letter and digit."""
+    value = unicodedata.normalize("NFKC", html.unescape(str(raw or ""))).casefold()
+    return " ".join(
+        "".join(" " if ch.isspace() or unicodedata.category(ch).startswith("P") else ch for ch in value).split()
+    )
+
+
+def _error_list(article: dict) -> list[str]:
+    return [value for value in (article.get("parser_error") or "").split(";") if value]
+
+
+def _set_errors(article: dict, errors: list[str]) -> None:
+    article["parser_error"] = ";".join(dict.fromkeys(errors)) or None
+
+
+def _reconcile_title(article: dict) -> None:
+    visible = common.clean(article.get("title"))
+    structured = common.clean(article.get("field_evidence", {}).get("jsonld_headline"))
+    matched = bool(visible and structured and _title_key(visible) == _title_key(structured))
+    errors = _error_list(article)
+    if matched:
+        errors = [value for value in errors if value != "visible_vs_jsonld_title_disagreement"]
+    _set_errors(article, errors)
+    article["field_evidence"]["title_reconciliation"] = {
+        "method": "unicode_nfkc_entity_whitespace_case_and_punctuation_only",
+        "matched": matched,
+        "semantic_edits_allowed": False,
+    }
+
+
+def _body_text(raw: object) -> str:
+    if not isinstance(raw, str):
+        return ""
+    return common.clean(BeautifulSoup(html.unescape(raw), "html.parser").get_text(" ", strip=True)) or ""
+
+
+def _body_key(raw: object) -> str:
+    value = unicodedata.normalize("NFKC", html.unescape(str(raw or ""))).casefold()
+    return " ".join(re.sub(r"[^\w]+", " ", value, flags=re.UNICODE).split())
+
+
+def _maybe_use_structured_body(article: dict, soup: BeautifulSoup) -> None:
+    """Use JSON-LD only when it contains a substantive visible body fragment."""
+    item = common.article_jsonld(soup) or {}
+    visible = common.clean(article.get("maintext")) or ""
+    structured = _body_text(item.get("articleBody"))
+    visible_key = _body_key(visible)
+    structured_key = _body_key(structured)
+    visible_words = set(visible_key.split())
+    structured_words = set(structured_key.split())
+    containment = (
+        len(visible_words & structured_words) / len(visible_words)
+        if visible_words else None
+    )
+    exact_containment = bool(
+        len(visible) >= 40
+        and visible_key
+        and structured_key
+        and visible_key in structured_key
+    )
+    eligible = bool(
+        len(structured) >= 120
+        and exact_containment
+        and containment is not None
+        and containment >= 0.95
+    )
+    applied = bool(len(visible) < 120 and eligible)
+    evidence = {
+        "considered": len(visible) < 120,
+        "applied": applied,
+        "minimum_structured_characters": 120,
+        "visible_characters": len(visible),
+        "structured_characters": len(structured),
+        "visible_word_containment": containment,
+        "normalized_visible_contained": exact_containment,
+        "structured_body_sha256": hashlib.sha256(structured.encode("utf-8")).hexdigest() if structured else None,
+    }
+    if applied:
+        article["maintext"] = structured
+        article["field_sources"]["maintext"] = "jsonld.articleBody_strict_visible_containment_fallback"
+        errors = [
+            value for value in _error_list(article)
+            if value not in {"insufficient_visible_maintext", "visible_vs_structured_body_disagreement"}
+        ]
+        _set_errors(article, errors)
+    article["field_evidence"]["structured_body_fallback"] = evidence
 
 
 def _gates() -> dict[str, bool]:
@@ -136,7 +240,7 @@ def discover_urls(start: date, end: date, evidence: dict) -> list[str]:
 
 
 def _parse_article_html(url: str, payload: bytes, *, response_url: str | None = None) -> dict:
-    return common.parse_article_html(
+    article = common.parse_article_html(
         url=url,
         payload=payload,
         source_name=Config.source_name,
@@ -148,6 +252,10 @@ def _parse_article_html(url: str, payload: bytes, *, response_url: str | None = 
         body_selectors=BODY_SELECTORS,
         response_url=response_url,
     )
+    soup = BeautifulSoup(payload, "html.parser")
+    _reconcile_title(article)
+    _maybe_use_structured_body(article, soup)
+    return article
 
 
 def scrape_url(url: str) -> dict:

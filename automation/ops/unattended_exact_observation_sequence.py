@@ -112,6 +112,18 @@ class ParentPin:
 
 
 @dataclass(frozen=True)
+class SealedClassificationParentPin:
+    handoff_manifest: FilePin
+    worklist: FilePin
+    classification_seal: FilePin
+    independent_audit: FilePin
+    source_summary: FilePin
+    classified_source_ledger: FilePin
+    preserved_passes: FilePin
+    verified_exclusions: FilePin
+
+
+@dataclass(frozen=True)
 class LaneSpec:
     lane_id: str
     phase_id: str
@@ -126,6 +138,7 @@ class LaneSpec:
     exact_input: Optional[FilePin]
     exact_input_count: Optional[int]
     parent: Optional[ParentPin]
+    sealed_classification_parent: Optional[SealedClassificationParentPin]
     derivation_reason: Optional[str]
     acceptance: Mapping[str, object]
     repair_class: Optional[str]
@@ -322,6 +335,271 @@ def parent_pin(value: object, allowed_roots: Sequence[Path], field: str) -> Pare
     return ParentPin(resolved, normalized)
 
 
+def sealed_classification_parent_pin(
+    value: object, root: Path, field: str,
+) -> SealedClassificationParentPin:
+    if not isinstance(value, Mapping):
+        raise PlanError("%s must be a sealed classification parent pin" % field)
+    required = {
+        "handoff_manifest", "worklist", "classification_seal",
+        "independent_audit", "source_summary", "preserved_passes",
+        "verified_exclusions", "classified_source_ledger",
+    }
+    if set(value) != required:
+        raise PlanError("%s must pin every sealed classification artifact" % field)
+    return SealedClassificationParentPin(
+        handoff_manifest=file_pin(value["handoff_manifest"], root, "%s.handoff_manifest" % field),
+        worklist=file_pin(value["worklist"], root, "%s.worklist" % field),
+        classification_seal=file_pin(
+            value["classification_seal"], root, "%s.classification_seal" % field,
+        ),
+        independent_audit=file_pin(
+            value["independent_audit"], root, "%s.independent_audit" % field,
+        ),
+        source_summary=file_pin(value["source_summary"], root, "%s.source_summary" % field),
+        classified_source_ledger=file_pin(
+            value["classified_source_ledger"], root, "%s.classified_source_ledger" % field,
+        ),
+        preserved_passes=file_pin(
+            value["preserved_passes"], root, "%s.preserved_passes" % field,
+        ),
+        verified_exclusions=file_pin(
+            value["verified_exclusions"], root, "%s.verified_exclusions" % field,
+        ),
+    )
+
+
+def _exact_url_file_facts(pin: FilePin, expected_count: int) -> Dict[str, object]:
+    verify_file(pin)
+    lines = pin.path.read_text(encoding="utf-8").splitlines()
+    nonempty = [line.strip() for line in lines if line.strip()]
+    unique = list(dict.fromkeys(nonempty))
+    if len(nonempty) != expected_count or len(unique) != expected_count:
+        raise PlanError("exact URL input count or uniqueness mismatch")
+    return {
+        "count": len(unique),
+        "file_sha256": pin.sha256,
+        "url_set_sha256": target_url_sha256(unique),
+    }
+
+
+def _count_hash(value: object, field: str) -> Tuple[int, str]:
+    if not isinstance(value, Mapping):
+        raise PlanError("%s must contain count and SHA-256" % field)
+    count = value.get("count")
+    digest = str(value.get("sha256", ""))
+    if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+        raise PlanError("%s count is invalid" % field)
+    if not HEX64.fullmatch(digest):
+        raise PlanError("%s SHA-256 is invalid" % field)
+    return count, digest
+
+
+def _identity_jsonl_facts(pin: FilePin, source_id: str, field: str) -> Dict[str, object]:
+    verify_file(pin)
+    urls = []  # type: List[str]
+    for line in pin.path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise PlanError("%s contains invalid JSONL" % field) from exc
+        if not isinstance(row, Mapping) or row.get("source_id") != source_id:
+            raise PlanError("%s contains an invalid source identity" % field)
+        url = str(row.get("url", "")).strip()
+        if not url:
+            raise PlanError("%s contains a missing URL" % field)
+        urls.append(url)
+    if len(urls) != len(set(urls)):
+        raise PlanError("%s contains duplicate identities" % field)
+    return {
+        "count": len(urls), "sha256": pin.sha256,
+        "url_set_sha256": target_url_sha256(urls),
+        "_urls": frozenset(urls),
+    }
+
+
+def _assert_path_free_handoff(value: object, field: str = "handoff_manifest") -> None:
+    """Reject local/runtime paths from the portable sealed handoff manifest."""
+
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            normalized = str(key).lower()
+            if normalized in {
+                "path", "run_dir", "runtime_root", "output_root", "receipt_root",
+                "closed_runtime", "parent_run_dir",
+            } or normalized.endswith("_path"):
+                raise PlanError("%s contains a forbidden local/runtime path field" % field)
+            _assert_path_free_handoff(child, field)
+    elif isinstance(value, list):
+        for child in value:
+            _assert_path_free_handoff(child, field)
+    elif isinstance(value, str) and Path(value).is_absolute():
+        raise PlanError("%s contains a forbidden absolute path" % field)
+
+
+def verify_sealed_classification_parent(
+    parent: SealedClassificationParentPin,
+    source_id: str,
+    exact_input: FilePin,
+    exact_count: int,
+) -> Dict[str, object]:
+    pins = {
+        "handoff_manifest": parent.handoff_manifest,
+        "worklist": parent.worklist,
+        "classification_seal": parent.classification_seal,
+        "independent_audit": parent.independent_audit,
+        "source_summary": parent.source_summary,
+        "classified_source_ledger": parent.classified_source_ledger,
+        "preserved_passes": parent.preserved_passes,
+        "verified_exclusions": parent.verified_exclusions,
+    }
+    artifacts = {name: verify_file(pin) for name, pin in pins.items()}
+    if parent.worklist.path != exact_input.path or parent.worklist.sha256 != exact_input.sha256:
+        raise PlanError("sealed classification worklist must be the exact URL input")
+    facts = _exact_url_file_facts(parent.worklist, exact_count)
+    worklist_urls = {
+        line.strip() for line in parent.worklist.path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    manifest = load_object(parent.handoff_manifest.path)
+    _assert_path_free_handoff(manifest)
+    if (
+        manifest.get("schema_version") != 1
+        or manifest.get("kind") != "sealed_classification_exact_handoff"
+        or manifest.get("status") != "sealed"
+        or manifest.get("source_id") != source_id
+    ):
+        raise PlanError("sealed classification handoff identity is invalid")
+    source_name = source_id.split(":", 2)[-1]
+    if manifest.get("source_name") != source_name:
+        raise PlanError("sealed classification handoff source is invalid")
+    worklist = manifest.get("worklist")
+    if not isinstance(worklist, Mapping) or (
+        worklist.get("count") != facts["count"]
+        or worklist.get("sha256") != facts["file_sha256"]
+        or worklist.get("url_set_sha256") != facts["url_set_sha256"]
+    ):
+        raise PlanError("sealed classification worklist count, hash, or URL set is invalid")
+    if (
+        manifest.get("classification_seal_sha256") != parent.classification_seal.sha256
+        or manifest.get("independent_audit_sha256") != parent.independent_audit.sha256
+        or manifest.get("source_summary_sha256") != parent.source_summary.sha256
+    ):
+        raise PlanError("sealed classification handoff artifact hashes are invalid")
+    preserved_count, preserved_sha = _count_hash(
+        manifest.get("preserved_passes"), "handoff_manifest.preserved_passes",
+    )
+    exclusion_count, exclusion_sha = _count_hash(
+        manifest.get("verified_exclusions"), "handoff_manifest.verified_exclusions",
+    )
+    preserved_facts = _identity_jsonl_facts(
+        parent.preserved_passes, source_id, "preserved_passes",
+    )
+    exclusion_facts = _identity_jsonl_facts(
+        parent.verified_exclusions, source_id, "verified_exclusions",
+    )
+    classified_facts = _identity_jsonl_facts(
+        parent.classified_source_ledger, source_id, "classified_source_ledger",
+    )
+    classified_urls = {
+        str(json.loads(line).get("url", "")).strip()
+        for line in parent.classified_source_ledger.path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    preserved_urls = set(preserved_facts["_urls"])
+    exclusion_urls = set(exclusion_facts["_urls"])
+    if (
+        worklist_urls & preserved_urls
+        or worklist_urls & exclusion_urls
+        or preserved_urls & exclusion_urls
+    ):
+        raise PlanError("sealed classification identity partitions overlap")
+    if (
+        (preserved_count, preserved_sha)
+        != (preserved_facts["count"], preserved_facts["sha256"])
+        or manifest.get("preserved_passes", {}).get("url_set_sha256")
+        != preserved_facts["url_set_sha256"]
+        or (exclusion_count, exclusion_sha)
+        != (exclusion_facts["count"], exclusion_facts["sha256"])
+        or manifest.get("verified_exclusions", {}).get("url_set_sha256")
+        != exclusion_facts["url_set_sha256"]
+        or manifest.get("classified_source_ledger") != {
+            key: classified_facts[key] for key in ("count", "sha256", "url_set_sha256")
+        }
+        or not worklist_urls.issubset(classified_urls)
+    ):
+        raise PlanError("sealed preserved-pass or exclusion ledger facts are invalid")
+    summary = load_object(parent.source_summary.path)
+    _assert_path_free_handoff(summary, "source_summary")
+    if (
+        summary.get("source_id") != source_id
+        or summary.get("classified_count") != classified_facts["count"]
+        or _count_hash(summary.get("preserved_passes"), "source_summary.preserved_passes")
+        != (preserved_count, preserved_sha)
+        or _count_hash(summary.get("verified_exclusions"), "source_summary.verified_exclusions")
+        != (exclusion_count, exclusion_sha)
+    ):
+        raise PlanError("sealed classification source summary does not match the handoff")
+    audit = load_object(parent.independent_audit.path)
+    _assert_path_free_handoff(audit, "independent_audit")
+    seal = load_object(parent.classification_seal.path)
+    _assert_path_free_handoff(seal, "classification_seal")
+    source_code = source_id.split(":", 2)[1] if source_id.count(":") >= 2 else ""
+    audit_summary = audit.get("check_summary")
+    audit_sources = audit.get("sources")
+    audit_source = audit_sources.get(source_code) if isinstance(audit_sources, Mapping) else None
+    audited = audit.get("audited_artifacts")
+    output_hashes = {
+        item.get("sha256") for item in seal.get("output_artifacts", [])
+        if isinstance(item, Mapping)
+    }
+    if (
+        seal.get("kind") != "private_offline_classification_seal"
+        or seal.get("status") != "sealed_pending_independent_audit"
+        or parent.source_summary.sha256 not in output_hashes
+        or parent.classified_source_ledger.sha256 not in output_hashes
+        or audit.get("kind") != "private_independent_offline_source_local_classification_audit"
+        or audit.get("result") != "approved"
+        or not isinstance(audit_summary, Mapping)
+        or audit_summary.get("failed") != 0
+        or not isinstance(audit_summary.get("total"), int)
+        or audit_summary.get("total", 0) <= 0
+        or audit_summary.get("passed") != audit_summary.get("total")
+        or not isinstance(audit.get("failed_checks"), list)
+        or audit.get("failed_checks")
+        or not isinstance(audited, Mapping)
+        or audited.get("classification_seal_sha256") != parent.classification_seal.sha256
+        or not isinstance(audit_source, Mapping)
+        or audit_source.get("classified_count") != classified_facts["count"]
+        or audit_source.get("preserved_pass_count") != preserved_count
+        or audit_source.get("verified_exclusion_count") != exclusion_count
+    ):
+        raise PlanError("sealed classification independent audit is not approved for the source")
+    return {
+        "kind": "sealed_classification_parent",
+        "source_id": source_id,
+        "target_url_count": facts["count"],
+        "target_url_set_sha256": facts["url_set_sha256"],
+        "worklist_sha256": facts["file_sha256"],
+        "classification_seal_sha256": parent.classification_seal.sha256,
+        "independent_audit_sha256": parent.independent_audit.sha256,
+        "source_summary_sha256": parent.source_summary.sha256,
+        "handoff_manifest_sha256": parent.handoff_manifest.sha256,
+        "preserved_pass_count": preserved_count,
+        "preserved_pass_sha256": preserved_sha,
+        "verified_exclusion_count": exclusion_count,
+        "verified_exclusion_sha256": exclusion_sha,
+        "preserved_pass_url_set_sha256": preserved_facts["url_set_sha256"],
+        "verified_exclusion_url_set_sha256": exclusion_facts["url_set_sha256"],
+        "classified_source_count": classified_facts["count"],
+        "classified_source_ledger_sha256": classified_facts["sha256"],
+        "classified_source_url_set_sha256": classified_facts["url_set_sha256"],
+        "artifacts": artifacts,
+    }
+
+
 def assert_pure_python(path: Path) -> None:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -378,6 +656,51 @@ def verify_publication_gate(value: object, root: Path, field: str) -> str:
     for name in ("review_receipt", "test_receipt"):
         verify_file(file_pin(value.get(name), root, "%s.%s" % (field, name)))
     return str(value["commit"])
+
+
+def publication_redirect_exact_sets(value: object, field: str) -> frozenset[Tuple[str, int, str]]:
+    if not isinstance(value, Mapping):
+        return frozenset()
+    raw_sets = value.get("redirect_exact_sets", [])
+    if not isinstance(raw_sets, list):
+        raise PlanError("%s redirect exact sets must be a list" % field)
+    normalized = set()  # type: set[Tuple[str, int, str]]
+    for index, item in enumerate(raw_sets):
+        if not isinstance(item, Mapping) or set(item) != {"source_id", "count", "sha256"}:
+            raise PlanError("%s redirect exact set is invalid" % field)
+        source_id = str(item.get("source_id", ""))
+        count = positive_int(item.get("count"), "%s.redirect_exact_sets[%s].count" % (field, index))
+        digest = str(item.get("sha256", ""))
+        if source_id not in REVIEWED_REDIRECT_EXACT_SETS or not HEX64.fullmatch(digest):
+            raise PlanError("%s redirect exact set source or hash is invalid" % field)
+        entry = (source_id, count, digest)
+        if entry in normalized:
+            raise PlanError("%s contains a duplicate redirect exact set" % field)
+        normalized.add(entry)
+    return frozenset(normalized)
+
+
+def validate_acceptance_contract(value: Mapping[str, object]) -> None:
+    targeted = value.get("targeted_issue_codes_zero")
+    allowed = value.get("allowed_unrelated_issue_codes")
+    if targeted is None and allowed is None:
+        return
+    if not isinstance(targeted, list) or not targeted:
+        raise PlanError("targeted_issue_codes_zero must be a nonempty list")
+    if not isinstance(allowed, list):
+        raise PlanError("allowed_unrelated_issue_codes must be a list")
+    for field, values in (
+        ("targeted_issue_codes_zero", targeted),
+        ("allowed_unrelated_issue_codes", allowed),
+    ):
+        if any(not isinstance(item, str) or not item.strip() for item in values):
+            raise PlanError("%s contains an invalid issue code" % field)
+        if len(set(values)) != len(values):
+            raise PlanError("%s contains a duplicate issue code" % field)
+    if "adapter_parser_error" not in targeted:
+        raise PlanError("targeted_issue_codes_zero must include adapter_parser_error")
+    if set(targeted) & set(allowed):
+        raise PlanError("targeted and allowed unrelated issue codes overlap")
 
 
 def load_plan(
@@ -458,10 +781,15 @@ def load_plan(
             raise PlanError("phase is not production-write-disabled")
         reviewed_publication = raw_phase.get("requires_reviewed_publication") is True
         publication_commit = None
+        reviewed_redirect_sets = frozenset()  # type: frozenset[Tuple[str, int, str]]
         if reviewed_publication:
+            publication_gate = raw_phase.get("publication_gate")
             publication_commit = verify_publication_gate(
-                raw_phase.get("publication_gate"), deployment_root,
+                publication_gate, deployment_root,
                 "phases[%s]" % phase_index,
+            )
+            reviewed_redirect_sets = publication_redirect_exact_sets(
+                publication_gate, "phases[%s].publication_gate" % phase_index,
             )
         max_active = positive_int(
             raw_phase.get("max_active_lanes"),
@@ -504,10 +832,12 @@ def load_plan(
             acceptance = raw_lane.get("acceptance")
             if not isinstance(acceptance, Mapping):
                 raise PlanError("lane acceptance contract is missing")
+            validate_acceptance_contract(acceptance)
             expected_requests = None
             exact_input = None
             exact_count = None
             parent = None
+            sealed_classification_parent = None
             derivation = None
             repair_class = None
             if kind == "discovery_diagnostic":
@@ -532,9 +862,30 @@ def load_plan(
                     raise PlanError("exact lane must explicitly disable rediscovery")
                 exact_input = file_pin(raw_lane.get("exact_input"), deployment_root, "exact_input")
                 exact_count = positive_int(raw_lane.get("exact_input_count"), "exact_input_count")
-                parent = parent_pin(raw_lane.get("parent"), allowed_parent_roots, "parent")
                 verify_file(exact_input)
-                verify_parent(parent)
+                has_legacy_parent = raw_lane.get("parent") is not None
+                has_sealed_parent = raw_lane.get("sealed_classification_parent") is not None
+                if has_legacy_parent == has_sealed_parent:
+                    raise PlanError(
+                        "exact lane requires exactly one legacy or sealed classification parent"
+                    )
+                if has_legacy_parent:
+                    parent = parent_pin(raw_lane.get("parent"), allowed_parent_roots, "parent")
+                    verify_parent(parent)
+                else:
+                    sealed_classification_parent = sealed_classification_parent_pin(
+                        raw_lane.get("sealed_classification_parent"), deployment_root,
+                        "sealed_classification_parent",
+                    )
+                    verify_sealed_classification_parent(
+                        sealed_classification_parent, source_id, exact_input, exact_count,
+                    )
+                    if not {
+                        "targeted_issue_codes_zero", "allowed_unrelated_issue_codes",
+                    }.issubset(acceptance):
+                        raise PlanError(
+                            "sealed classification lane requires targeted issue acceptance"
+                        )
                 repair_class = str(raw_lane.get("repair_class", ""))
                 if repair_class not in {"parser_exact", "redirect_exact", "other_exact"}:
                     raise PlanError("exact lane repair_class is missing or unsupported")
@@ -544,7 +895,11 @@ def load_plan(
                     if publication_commit != code_git_commit:
                         raise PlanError("redirect exact lane publication commit differs from execution commit")
                     expected = REVIEWED_REDIRECT_EXACT_SETS.get(source_id)
-                    if expected is None or expected != (exact_count, exact_input.sha256):
+                    exact_set = (source_id, exact_count, exact_input.sha256)
+                    if expected is None or (
+                        expected != (exact_count, exact_input.sha256)
+                        and exact_set not in reviewed_redirect_sets
+                    ):
                         raise PlanError("redirect exact lane does not match its reviewed exact set")
                 derivation = str(raw_lane.get("derivation_reason", "")).strip()
                 if not derivation:
@@ -554,6 +909,7 @@ def load_plan(
                 adapter=adapter, start=start, end=end, workers=workers,
                 timeout_seconds=timeout_seconds, expected_requests=expected_requests,
                 exact_input=exact_input, exact_input_count=exact_count, parent=parent,
+                sealed_classification_parent=sealed_classification_parent,
                 derivation_reason=derivation, acceptance=dict(acceptance),
                 repair_class=repair_class,
             ))
@@ -961,17 +1317,7 @@ class SequenceController:
 
     def exact_input_facts(self, lane: LaneSpec) -> Mapping[str, object]:
         assert lane.exact_input is not None and lane.exact_input_count is not None
-        verify_file(lane.exact_input)
-        lines = lane.exact_input.path.read_text(encoding="utf-8").splitlines()
-        nonempty = [line.strip() for line in lines if line.strip()]
-        unique = list(dict.fromkeys(nonempty))
-        if len(nonempty) != lane.exact_input_count or len(unique) != lane.exact_input_count:
-            raise PlanError("exact URL input count or uniqueness mismatch")
-        return {
-            "count": len(unique),
-            "file_sha256": lane.exact_input.sha256,
-            "url_set_sha256": target_url_sha256(unique),
-        }
+        return _exact_url_file_facts(lane.exact_input, lane.exact_input_count)
 
     def verify_lane_pins(self, lane: LaneSpec) -> Mapping[str, object]:
         result = {
@@ -979,9 +1325,16 @@ class SequenceController:
             "execution_files": self.verify_global_pins(),
         }  # type: Dict[str, object]
         if lane.kind == "exact_urls":
-            assert lane.parent is not None
             result["exact_input"] = self.exact_input_facts(lane)
-            result["parent"] = verify_parent(lane.parent)
+            if lane.parent is not None:
+                result["parent"] = verify_parent(lane.parent)
+            else:
+                assert lane.sealed_classification_parent is not None
+                assert lane.exact_input is not None and lane.exact_input_count is not None
+                result["sealed_classification_parent"] = verify_sealed_classification_parent(
+                    lane.sealed_classification_parent, lane.source_id,
+                    lane.exact_input, lane.exact_input_count,
+                )
         return result
 
     def validate_lane_start(
@@ -1021,14 +1374,18 @@ class SequenceController:
         if not isinstance(receipt.get("capacity_snapshot"), Mapping):
             raise PlanError("lane start receipt lacks its capacity snapshot")
         if lane.kind == "exact_urls":
-            assert lane.parent is not None
             facts = current_pins.get("exact_input")
             if not isinstance(facts, Mapping):
                 raise PlanError("lane start receipt exact input facts are missing")
+            expected_legacy_hashes = (
+                dict(lane.parent.artifacts) if lane.parent is not None else None
+            )
+            expected_sealed = current_pins.get("sealed_classification_parent")
             if (
                 receipt.get("private_input_count") != facts.get("count")
                 or receipt.get("private_input_sha256") != facts.get("file_sha256")
-                or receipt.get("parent_provenance_hashes") != dict(lane.parent.artifacts)
+                or receipt.get("parent_provenance_hashes") != expected_legacy_hashes
+                or receipt.get("sealed_classification_provenance") != expected_sealed
             ):
                 raise PlanError("lane start receipt exact input or parent pins are invalid")
         return receipt
@@ -1355,9 +1712,9 @@ class SequenceController:
                 "--expected-robots", str(lane.expected_requests["robots"]),
                 "--expected-inventory", str(lane.expected_requests["inventory"]),
             ]
-        assert lane.exact_input is not None and lane.parent is not None
+        assert lane.exact_input is not None
         observer = self.runtime.automation_root / "scripts/parallel_observe_pure.py"
-        return [
+        command = [
             str(self.runtime.python), PYTHON_NO_BYTECODE_FLAG, str(observer),
             "--automation-root", str(self.runtime.automation_root),
             "--source-file", str(lane.adapter.path),
@@ -1366,9 +1723,31 @@ class SequenceController:
             "--output-root", str(output_dir / "runs"),
             "--workers", str(lane.workers),
             "--urls-file", str(lane.exact_input.path),
-            "--parent-run-dir", str(lane.parent.run_dir),
-            "--derivation-reason", str(lane.derivation_reason),
         ]
+        if lane.parent is not None:
+            command.extend([
+                "--parent-run-dir", str(lane.parent.run_dir),
+                "--derivation-reason", str(lane.derivation_reason),
+            ])
+        else:
+            assert lane.sealed_classification_parent is not None
+            sealed = lane.sealed_classification_parent
+            for flag, pin in (
+                ("handoff-manifest", sealed.handoff_manifest),
+                ("worklist", sealed.worklist),
+                ("classification-seal", sealed.classification_seal),
+                ("independent-audit", sealed.independent_audit),
+                ("source-summary", sealed.source_summary),
+                ("classified-source-ledger", sealed.classified_source_ledger),
+                ("preserved-passes", sealed.preserved_passes),
+                ("verified-exclusions", sealed.verified_exclusions),
+            ):
+                command.extend([
+                    "--sealed-classification-%s" % flag, str(pin.path),
+                    "--sealed-classification-%s-sha256" % flag, pin.sha256,
+                ])
+            command.extend(["--derivation-reason", str(lane.derivation_reason)])
+        return command
 
     def child_environment(self) -> Dict[str, str]:
         env = {
@@ -1448,6 +1827,27 @@ class SequenceController:
                 lane.acceptance.get("exceptions_max", 0)
             ),
         }  # type: Dict[str, bool]
+        if lane.sealed_classification_parent is not None:
+            checks["issues_artifact_present"] = (run_dir / "issues.jsonl").is_file()
+            assert lane.exact_input is not None and lane.exact_input_count is not None
+            expected_parent = verify_sealed_classification_parent(
+                lane.sealed_classification_parent, lane.source_id,
+                lane.exact_input, lane.exact_input_count,
+            )
+            for key in (
+                "kind", "source_id", "worklist_sha256",
+                "classification_seal_sha256", "independent_audit_sha256",
+                "source_summary_sha256", "handoff_manifest_sha256",
+                "preserved_pass_count", "preserved_pass_sha256",
+                "verified_exclusion_count", "verified_exclusion_sha256",
+                "preserved_pass_url_set_sha256",
+                "verified_exclusion_url_set_sha256",
+                "classified_source_count", "classified_source_ledger_sha256",
+                "classified_source_url_set_sha256",
+            ):
+                checks["sealed_classification_parent:%s" % key] = (
+                    derived.get(key) == expected_parent.get(key)
+                )
         issue_max = lane.acceptance.get("issue_code_max", {})
         if isinstance(issue_max, Mapping):
             for code, maximum in issue_max.items():
@@ -1456,6 +1856,18 @@ class SequenceController:
         if isinstance(failure_max, Mapping):
             for code, maximum in failure_max.items():
                 checks["failure_class:%s" % code] = failure_classes.get(str(code), 0) <= int(maximum)
+        targeted_issue_codes = lane.acceptance.get("targeted_issue_codes_zero")
+        allowed_unrelated_issue_codes = lane.acceptance.get("allowed_unrelated_issue_codes")
+        if isinstance(targeted_issue_codes, list) and isinstance(
+            allowed_unrelated_issue_codes, list,
+        ):
+            for code in targeted_issue_codes:
+                checks["targeted_issue_code_zero:%s" % code] = (
+                    issue_counts.get(str(code), 0) == 0
+                )
+            checks["issue_code_allowlist"] = set(issue_counts).issubset(
+                set(targeted_issue_codes) | set(allowed_unrelated_issue_codes)
+            )
         if lane.repair_class == "redirect_exact":
             checks["failure_class:unreviewed_redirect"] = (
                 failure_classes.get("unreviewed_redirect", 0) == 0
@@ -1565,6 +1977,9 @@ class SequenceController:
                 "private_input_sha256": input_facts.get("file_sha256"),
                 "parent_provenance_hashes": (
                     dict(lane.parent.artifacts) if lane.parent is not None else None
+                ),
+                "sealed_classification_provenance": pre_pins.get(
+                    "sealed_classification_parent"
                 ),
                 "capacity_snapshot": capacity,
                 "production_writes": False,

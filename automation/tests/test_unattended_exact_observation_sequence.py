@@ -142,6 +142,122 @@ class Fixture:
         return sequence.load_plan(path, digest, self.deployment, (self.root / "parent",))
 
 
+def add_sealed_classification_parent(
+    fixture: Fixture, payload: dict, *, invalid_url_set: bool = False,
+    summary_count: int | None = None, parent_classified_count: int | None = None,
+    overlap_with_worklist: bool = False, path_injection: bool = False,
+) -> dict:
+    lane = payload["phases"][0]["lanes"][0]
+    lane.pop("parent", None)
+    root = fixture.deployment / "private/sealed-parent"
+    root.mkdir(parents=True, exist_ok=True)
+    worklist = fixture.input
+    exact_urls = worklist.read_text(encoding="utf-8").splitlines()
+    preserved_urls = [f"https://example.test/pass-{index}" for index in range(11)]
+    if overlap_with_worklist:
+        preserved_urls[0] = exact_urls[0]
+    preserved = root / "preserved_passes.private.ndjson"
+    preserved.write_text(''.join(
+        json.dumps({"source_id": lane["source_id"], "url": url}) + "\n"
+        for url in preserved_urls
+    ), encoding="utf-8")
+    exclusions = root / "verified_exclusions.private.ndjson"
+    exclusions.write_text(''.join(
+        json.dumps({"source_id": lane["source_id"], "url": f"https://example.test/exclusion-{index}"}) + "\n"
+        for index in range(5)
+    ), encoding="utf-8")
+    parent_count = parent_classified_count or lane["exact_input_count"]
+    classified_urls = list(exact_urls) + [
+        f"https://example.test/classified-extra-{index}"
+        for index in range(parent_count - len(exact_urls))
+    ]
+    classified = root / "classified_source_ledger.private.ndjson"
+    classified.write_text(''.join(
+        json.dumps({"source_id": lane["source_id"], "url": url}) + "\n"
+        for url in classified_urls
+    ), encoding="utf-8")
+    summary = root / "source_summary.private.json"
+    summary_payload = {
+        "source_id": lane["source_id"],
+        "classified_count": parent_count if summary_count is None else summary_count,
+        "preserved_passes": {"count": 11, "sha256": sha(preserved)},
+        "verified_exclusions": {"count": 5, "sha256": sha(exclusions)},
+    }
+    if path_injection:
+        summary_payload["runtime_root"] = "/private/closed-runtime"
+    summary.write_text(json.dumps(summary_payload) + "\n", encoding="utf-8")
+    seal = root / "classification_seal.private.json"
+    seal.write_text(json.dumps({
+        "kind": "private_offline_classification_seal",
+        "status": "sealed_pending_independent_audit",
+        "output_artifacts": [{"sha256": sha(summary)}, {"sha256": sha(classified)}],
+    }) + "\n", encoding="utf-8")
+    audit = root / "independent_audit.private.json"
+    audit.write_text(json.dumps({
+        "kind": "private_independent_offline_source_local_classification_audit",
+        "result": "approved", "failed_checks": [],
+        "check_summary": {"failed": 0, "passed": 3, "total": 3},
+        "audited_artifacts": {"classification_seal_sha256": sha(seal)},
+        "sources": {lane["source_id"].split(":", 2)[1]: {
+            "classified_count": parent_count, "preserved_pass_count": 11,
+            "verified_exclusion_count": 5,
+        }},
+    }) + "\n", encoding="utf-8")
+    worklist_urls = worklist.read_text(encoding="utf-8").splitlines()
+    url_set_sha = sequence.target_url_sha256(worklist_urls)
+    handoff = root / "handoff_manifest.private.json"
+    handoff.write_text(json.dumps({
+        "schema_version": 1,
+        "kind": "sealed_classification_exact_handoff",
+        "status": "sealed",
+        "source_id": lane["source_id"],
+        "source_name": lane["source_id"].split(":", 2)[-1],
+        "worklist": {
+            "count": lane["exact_input_count"],
+            "sha256": sha(worklist),
+            "url_set_sha256": "0" * 64 if invalid_url_set else url_set_sha,
+        },
+        "classification_seal_sha256": sha(seal),
+        "independent_audit_sha256": sha(audit),
+        "source_summary_sha256": sha(summary),
+        "preserved_passes": {
+            "count": 11, "sha256": sha(preserved),
+            "url_set_sha256": sequence.target_url_sha256(preserved_urls),
+        },
+        "verified_exclusions": {
+            "count": 5, "sha256": sha(exclusions),
+            "url_set_sha256": sequence.target_url_sha256(
+                [f"https://example.test/exclusion-{index}" for index in range(5)]
+            ),
+        },
+        "classified_source_ledger": {
+            "count": parent_count, "sha256": sha(classified),
+            "url_set_sha256": sequence.target_url_sha256(classified_urls),
+        },
+    }) + "\n", encoding="utf-8")
+    lane["sealed_classification_parent"] = {
+        name: {
+            "path": path.relative_to(fixture.deployment).as_posix(),
+            "sha256": sha(path),
+        }
+        for name, path in {
+            "handoff_manifest": handoff,
+            "worklist": worklist,
+            "classification_seal": seal,
+            "independent_audit": audit,
+            "source_summary": summary,
+            "preserved_passes": preserved,
+            "verified_exclusions": exclusions,
+            "classified_source_ledger": classified,
+        }.items()
+    }
+    lane["acceptance"].update({
+        "targeted_issue_codes_zero": ["adapter_parser_error"],
+        "allowed_unrelated_issue_codes": ["title_missing"],
+    })
+    return lane
+
+
 def green_report(workers=2):
     return {
         "status": "reduced", "launch_allowed": True,
@@ -200,11 +316,82 @@ def test_exact_command_has_private_url_and_parent_pins_but_no_discovery_mode():
         assert "--urls-file" in command
         assert "--parent-run-dir" in command
         assert "--derivation-reason" in command
+        assert command.index("--urls-file") < command.index("--parent-run-dir") < command.index(
+            "--derivation-reason"
+        )
         assert command[command.index("--workers") + 1] == "2"
         assert not any(value in {"--commit", "--promote"} for value in command)
         fixture.input.write_text("https://example.test/a\n", encoding="utf-8")
         with pytest.raises(sequence.PlanError, match="SHA-256"):
             controller.exact_input_facts(lane)
+
+
+def test_sealed_classification_parent_is_mutually_exclusive_verified_and_passed_to_observer():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        payload = json.loads(json.dumps(fixture.payload))
+        add_sealed_classification_parent(fixture, payload)
+        plan = fixture.load(payload)
+        lane = plan.phases[0].lanes[0]
+        assert lane.parent is None
+        assert lane.sealed_classification_parent is not None
+        controller = sequence.SequenceController(
+            plan, fixture.runtime, capacity_reporter=lambda: green_report(),
+        )
+        pins = controller.verify_lane_pins(lane)
+        provenance = pins["sealed_classification_parent"]
+        assert provenance["target_url_count"] == 2
+        assert provenance["preserved_pass_count"] == 11
+        assert provenance["verified_exclusion_count"] == 5
+        assert "run_dir" not in provenance
+        command = controller.build_command(lane, fixture.root / "lane-output")
+        assert "--parent-run-dir" not in command
+        assert "--sealed-classification-handoff-manifest" in command
+        assert "--sealed-classification-worklist-sha256" in command
+        assert "--sealed-classification-independent-audit-sha256" in command
+
+        missing_issue_contract = json.loads(json.dumps(payload))
+        missing_acceptance = missing_issue_contract["phases"][0]["lanes"][0]["acceptance"]
+        missing_acceptance.pop("targeted_issue_codes_zero")
+        missing_acceptance.pop("allowed_unrelated_issue_codes")
+        with pytest.raises(sequence.PlanError, match="targeted issue acceptance"):
+            fixture.load(missing_issue_contract)
+
+        both = json.loads(json.dumps(payload))
+        both["phases"][0]["lanes"][0]["parent"] = fixture.payload["phases"][0]["lanes"][0]["parent"]
+        with pytest.raises(sequence.PlanError, match="exactly one"):
+            fixture.load(both)
+
+        weak_audit = json.loads(json.dumps(payload))
+        sealed = weak_audit["phases"][0]["lanes"][0]["sealed_classification_parent"]
+        audit_path = fixture.deployment / sealed["independent_audit"]["path"]
+        audit_path.write_text('{"result":"approved","sources":{"TST":{}}}\n', encoding="utf-8")
+        sealed["independent_audit"]["sha256"] = sha(audit_path)
+        handoff_path = fixture.deployment / sealed["handoff_manifest"]["path"]
+        handoff = json.loads(handoff_path.read_text())
+        handoff["independent_audit_sha256"] = sha(audit_path)
+        handoff_path.write_text(json.dumps(handoff) + "\n", encoding="utf-8")
+        sealed["handoff_manifest"]["sha256"] = sha(handoff_path)
+        with pytest.raises(sequence.PlanError, match="independent audit"):
+            fixture.load(weak_audit)
+
+
+@pytest.mark.parametrize(
+    "options, message",
+    [
+        ({"invalid_url_set": True}, "URL set"),
+        ({"summary_count": 1}, "source summary"),
+        ({"overlap_with_worklist": True}, "partitions overlap"),
+        ({"path_injection": True}, "forbidden local/runtime path"),
+    ],
+)
+def test_sealed_classification_parent_rejects_url_set_and_summary_drift(options, message):
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        payload = json.loads(json.dumps(fixture.payload))
+        add_sealed_classification_parent(fixture, payload, **options)
+        with pytest.raises(sequence.PlanError, match=message):
+            fixture.load(payload)
 
 
 @pytest.mark.parametrize("kind", ("exact_urls", "discovery_diagnostic"))
@@ -225,6 +412,7 @@ def test_controller_child_python_preserves_deployment_closure(kind):
                 exact_input=None,
                 exact_input_count=None,
                 parent=None,
+                sealed_classification_parent=None,
                 derivation_reason=None,
                 repair_class=None,
             )
@@ -362,6 +550,93 @@ def test_redirect_exact_class_requires_gate_and_reviewed_count_and_hash():
         lane["source_id"] = "mlp:LBR:liberianinvestigator.com"
         with pytest.raises(sequence.PlanError, match="publication gate"):
             fixture.load(payload)
+
+
+def test_redirect_exact_subset_requires_explicit_publication_pinned_allowed_set():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        fixture.input.write_text("https://example.test/a\n", encoding="utf-8")
+        payload = json.loads(json.dumps(fixture.payload))
+        lane = payload["phases"][0]["lanes"][0]
+        lane["source_id"] = "mlp:SSD:eyeradio.org"
+        lane["repair_class"] = "redirect_exact"
+        lane["exact_input"]["sha256"] = sha(fixture.input)
+        lane["exact_input_count"] = 1
+        phase = payload["phases"][0]
+        phase["requires_reviewed_publication"] = True
+        review = fixture.deployment / "receipts/review.json"
+        tests = fixture.deployment / "receipts/tests.json"
+        review.parent.mkdir(parents=True)
+        review.write_text('{}\n', encoding="utf-8")
+        tests.write_text('{}\n', encoding="utf-8")
+        phase["publication_gate"] = {
+            "status": "reviewed_published", "repository": "lin61302/scraping",
+            "branch": "main", "commit": "1" * 40,
+            "review_receipt": {"path": "receipts/review.json", "sha256": sha(review)},
+            "test_receipt": {"path": "receipts/tests.json", "sha256": sha(tests)},
+            "redirect_exact_sets": [{
+                "source_id": lane["source_id"], "count": 1, "sha256": sha(fixture.input),
+            }],
+        }
+        add_sealed_classification_parent(fixture, payload, parent_classified_count=144)
+        assert fixture.load(payload).phases[0].lanes[0].exact_input_count == 1
+        phase["publication_gate"]["redirect_exact_sets"][0]["sha256"] = "f" * 64
+        with pytest.raises(sequence.PlanError, match="reviewed exact set"):
+            fixture.load(payload)
+
+
+def test_acceptance_targets_parser_error_and_allows_only_listed_unrelated_codes():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        payload = json.loads(json.dumps(fixture.payload))
+        add_sealed_classification_parent(fixture, payload)
+        acceptance = payload["phases"][0]["lanes"][0]["acceptance"]
+        acceptance["targeted_issue_codes_zero"] = ["adapter_parser_error"]
+        acceptance["allowed_unrelated_issue_codes"] = ["title_missing"]
+        plan = fixture.load(payload)
+        lane = plan.phases[0].lanes[0]
+        controller = sequence.SequenceController(
+            plan, fixture.runtime, capacity_reporter=lambda: green_report(),
+        )
+        facts = controller.exact_input_facts(lane)
+        sealed_provenance = controller.verify_lane_pins(lane)["sealed_classification_parent"]
+        run = fixture.root / "observed"
+        run.mkdir()
+        (run / "manifest.json").write_text(json.dumps({
+            "status": "observed", "mode": "observation_no_production_writes",
+            "source_sha256": lane.adapter.sha256,
+            "counts": {"selected": 2, "passed": 0, "quarantined": 2, "skipped": 0, "exceptions": 0},
+            "derived_from": sealed_provenance,
+        }) + "\n", encoding="utf-8")
+        (run / "urls.jsonl").write_text(
+            ''.join(json.dumps({"url": url}) + "\n" for url in fixture.input.read_text().splitlines()),
+            encoding="utf-8",
+        )
+        (run / "errors.jsonl").write_text("", encoding="utf-8")
+        for name in ("articles.jsonl", "field_checks.jsonl"):
+            (run / name).write_text("", encoding="utf-8")
+
+        def write_issues(codes):
+            (run / "issues.jsonl").write_text(
+                ''.join(json.dumps({"code": code}) + "\n" for code in codes), encoding="utf-8",
+            )
+
+        write_issues(["title_missing"])
+        accepted, details = controller.acceptance_exact(lane, run, facts)
+        assert accepted is True
+        assert details["checks"]["issue_code_allowlist"] is True
+        write_issues(["title_missing", "adapter_parser_error"])
+        accepted, details = controller.acceptance_exact(lane, run, facts)
+        assert accepted is False
+        assert details["checks"]["targeted_issue_code_zero:adapter_parser_error"] is False
+        write_issues(["title_missing", "unexpected_issue"])
+        accepted, details = controller.acceptance_exact(lane, run, facts)
+        assert accepted is False
+        assert details["checks"]["issue_code_allowlist"] is False
+        (run / "issues.jsonl").unlink()
+        accepted, details = controller.acceptance_exact(lane, run, facts)
+        assert accepted is False
+        assert details["checks"]["issues_artifact_present"] is False
 
 
 def test_phase_batches_refill_after_isolated_failure():

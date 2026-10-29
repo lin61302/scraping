@@ -1,7 +1,9 @@
 """Production-disabled bounded pure sitemap candidate for Eagle Online Uganda."""
 from __future__ import annotations
 
+import html
 import os
+import unicodedata
 from datetime import date
 
 from bs4 import BeautifulSoup
@@ -49,6 +51,29 @@ RouteProfileUnverifiedError = common.RouteProfileUnverifiedError
 
 def _request(url: str, *, max_bytes: int, timeout: int = 45):
     return common.bounded_request(url, allowed_hosts=ALLOWED_HOSTS, max_bytes=max_bytes, timeout=timeout)
+
+
+def _title_key(raw: object) -> str:
+    """Normalize presentation-only differences while retaining semantic text."""
+    value = unicodedata.normalize("NFKC", html.unescape(str(raw or ""))).casefold()
+    return " ".join(
+        "".join(" " if ch.isspace() or unicodedata.category(ch).startswith("P") else ch for ch in value).split()
+    )
+
+
+def _reconcile_title(article: dict) -> None:
+    visible = common.clean(article.get("title"))
+    structured = common.clean(article.get("field_evidence", {}).get("jsonld_headline"))
+    matched = bool(visible and structured and _title_key(visible) == _title_key(structured))
+    errors = [value for value in (article.get("parser_error") or "").split(";") if value]
+    if matched:
+        errors = [value for value in errors if value != "visible_vs_jsonld_title_disagreement"]
+    article["parser_error"] = ";".join(dict.fromkeys(errors)) or None
+    article["field_evidence"]["title_reconciliation"] = {
+        "method": "unicode_nfkc_entity_whitespace_case_and_punctuation_only",
+        "matched": matched,
+        "semantic_edits_allowed": False,
+    }
 
 
 def _gates() -> dict[str, bool]:
@@ -157,6 +182,7 @@ def _parse_article_html(url: str, payload: bytes, *, response_url: str | None = 
     article["collection"] = "opinion-articles" if normalized & OPINION_SECTIONS else "articles"
     article["field_evidence"]["publisher_sections"] = sorted(normalized)
     article["field_evidence"]["opinion_sections"] = sorted(OPINION_SECTIONS)
+    _reconcile_title(article)
     return article
 
 
