@@ -1,0 +1,45 @@
+{
+  "boundary_effects": {
+    "first_pass_verified_through_changed": false,
+    "operational_through_changed": false,
+    "recorded_notion_boundary_changed": false,
+    "source_state_changed": false,
+    "strict_verified_through_changed": false
+  },
+  "continuity_space": {
+    "changed": false,
+    "head": "f164108f8be83d7b8e06e6c90887b77f0ba66a3a",
+    "repository": "ZR/mlp-mleed-source-tracker"
+  },
+  "event": "terminal",
+  "kind": "sanitized_immutable_autonomous_source_advancement_space_publication_provenance",
+  "occurred_at_utc": "2026-11-07T00:14:54Z",
+  "outcome": "succeeded",
+  "public_space": {
+    "commit": "234a670719242dfe417b957b8aa791a587e05adf",
+    "page_http": 200,
+    "previous_commit": "73d716fb7e3fcfdbf0e696bfc4d648192037c651",
+    "remote_snapshot_byte_identical": true,
+    "repository": "zungru/mlp-mleed-source-tracker",
+    "root_http": 200,
+    "snapshot_http": 200,
+    "snapshot_sha256": "a50c5e5a67db4cd7fcf8df8629adaf4bbe8cf73d5482072a9f9827dde22d2cba"
+  },
+  "publication_scope": {
+    "canonical_evidence_changed": false,
+    "operational_status_layer_published": true,
+    "source_count_history_inferred": false,
+    "tracker_boundary_advanced": false
+  },
+  "schema_version": 1,
+  "validation": {
+    "page_http_ok": true,
+    "privacy_tests": {
+      "passed": 36,
+      "total": 36
+    },
+    "remote_snapshot_byte_identical": true,
+    "root_http_ok": true,
+    "snapshot_http_ok": true
+  }
+}
