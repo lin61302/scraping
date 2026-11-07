@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 from types import SimpleNamespace
 
 import pytest
 
-from ops import build_local_exact_pan_ssd_uga_recovery_packet as builder
-from ops import launch_local_exact_sequence_once as launcher
-from ops.unattended_exact_observation_sequence import RuntimePaths
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from ops import build_local_exact_pan_ssd_uga_recovery_packet as builder  # noqa: E402
+from ops import launch_local_exact_sequence_once as launcher  # noqa: E402
+from ops.unattended_exact_observation_sequence import RuntimePaths  # noqa: E402
 
 
 def test_scope_is_exactly_four_lanes_and_396_identities():
