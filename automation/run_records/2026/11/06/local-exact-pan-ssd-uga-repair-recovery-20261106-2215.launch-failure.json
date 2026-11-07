@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "kind": "sanitized_immutable_launch_failure_and_tracker_publication",
+  "automation_id": "priority-country-scraping-monitor",
+  "event": "initial_launch_failure",
+  "sequence_id": "local-exact-pan-ssd-uga-repair-recovery-20261106-through-20260930",
+  "window_id": "2026-11-06_2215_America-New_York",
+  "attempted_at_utc": "2026-11-07T03:26:45.977056Z",
+  "failed_at_utc": "2026-11-07T03:26:50.203959Z",
+  "outcome": "initial_attempt_consumed_launch_failed_quiescent",
+  "scope": {
+    "source_country_codes": [
+      "PAN",
+      "SSD",
+      "UGA"
+    ],
+    "exact_repair_identities": 396,
+    "preserved_passes": 1240,
+    "preserved_verified_exclusions": 546,
+    "network_worker_ceiling": 1,
+    "browser_worker_ceiling": 0,
+    "production_writes": false
+  },
+  "gate_evidence": {
+    "external_capacity_status": "reduced",
+    "external_capacity_launch_allowed": true,
+    "static_launch_gate_checks": "575/575",
+    "preflight_status": "pass",
+    "preflight_returncode": 0,
+    "authorization_review_checks": "86/86",
+    "external_capacity_report_sha256": "a1f9969a48a20eb51752d1eeebb92451f4198639bf6b61eb2d2dee31294b292f",
+    "static_launch_gate_review_sha256": "46d018256c4c9f10e4676d4505fd1d164e42b0c0394352bde4eb4a28928e65e4",
+    "preflight_report_sha256": "7532b972436baa6e3aff3a65650ccd940e653ddc584e4d76e685f39aba991c42",
+    "authorization_sha256": "98e0808b802bb4c4b3f3bdc815de633c691535ed4d6264b2a275f55e33cd7b4e",
+    "authorization_review_sha256": "b3943d1d3ff8d42f13bb2d38830a234af343a39990d0cfbb8a5349633e664774"
+  },
+  "launch_evidence": {
+    "launcher_exit_code": 2,
+    "error_type": "LaunchError",
+    "status": "launch_failed",
+    "startup_inspection_seconds": 4,
+    "internal_capacity_status": "reduced",
+    "internal_capacity_launch_allowed": true,
+    "controller_log_bytes": 0,
+    "cleanup_signal": "SIGTERM",
+    "cleanup_exit_code": -15,
+    "cleanup_quiescent": true,
+    "attempt_receipt_sha256": "c129d068433406d225830807c3d3d4f495a1185f261c709cc8baeb729894c640",
+    "launch_receipt_sha256": "327cb164e37fb2fc7889bb454484959505b7d78e8830e939bd0fb1ab70328b32",
+    "failure_review_sha256": "65db0b1739a068df25dbd707578bdd34585cbe17c7b642b989be21e87c070cdd",
+    "failure_review_checks": "63/63",
+    "source_receipts_created": false,
+    "source_outputs_created": false,
+    "terminal_source_evidence_created": false
+  },
+  "diagnosis": {
+    "exact_failure_gate_proven": false,
+    "most_likely_cause": "post_start_capacity_check_counted_the_owned_controller_as_an_active_scraper_and_failed_closed",
+    "inference_basis": "immutable launcher and guard code plus reduced allowed startup evidence and quiescent SIGTERM cleanup",
+    "required_remediation": "publish and test an ownership-aware post-start capacity check with explicit privacy-safe failure-stage receipts, then build a fresh independently audited immutable packet",
+    "same_packet_retry_or_resume_permitted": false
+  },
+  "boundary_effect": {
+    "source_evidence_changed": false,
+    "recorded_notion_boundary_changed": false,
+    "operational_through_changed": false,
+    "first_pass_verified_through_changed": false,
+    "strict_verified_through_changed": false,
+    "tcg_state_changed": false,
+    "count_contract_values_changed": false
+  },
+  "immutable_pins": {
+    "plan_sha256": "02aba72aff48dbc7ba8a989bc3ca8b23eb37f29c2fafa02e1899a4541dc26377",
+    "deployment_sha256": "7c45c85fb825758e9a8de219205f73402535ee17e3207a7c2ef1ad22185db86d",
+    "deployment_manifest_sha256": "34f8eb636a931d1d95faba50df9da561ef85e67000bc34ccb3459f6f4ac319e1",
+    "launch_argv_sha256": "e55925b71cbb227d2bfb1507ce1e986198ca838544cb9cd5f5cb919c236df59d",
+    "launcher_binding_sha256": "d580328dd5ba3255789cf030d82fac668b52b29bc28b59853deb9ca395ee844d",
+    "count_tcg_contract_sha256": "ce0583cacae5f1b247c2421a64fbeac8a57238ca4fba1cf0514f0ef37f8c4132"
+  },
+  "published_dependencies": {
+    "one_worker_code_commit": "7f1969ad3303d17066a44542bbef863a7569b288",
+    "one_worker_test_commit": "f3ae8d866191e0e3052b30885d05266ba3afe680",
+    "packet_preparation_commit": "c0f41bee04d54419ebb2946816de50fd8c65766a",
+    "tracker_failure_state_test_commit": "8a056201578160348d106b7f57018c5b739c175b"
+  },
+  "public_tracker": {
+    "space": "zungru/mlp-mleed-source-tracker",
+    "space_commit": "bee94a9d76fa52a86f9ae9619bf281154226e11d",
+    "snapshot_sha256": "b6b2a647e5b12997be98a4086c25798515b0da6b6e5234aef31e387b4dbbcbd6",
+    "privacy_and_snapshot_tests_passed": 36,
+    "privacy_and_snapshot_tests_total": 36,
+    "space_page_http_status": 200,
+    "static_root_http_status": 200,
+    "snapshot_http_status": 200,
+    "remote_snapshot_byte_identical": true,
+    "current_scope_contract_count": 3,
+    "pending_contract_values_remain_null": true,
+    "comparison_space_changed": false
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_data_or_urls_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "infrastructure_metrics_published": false,
+    "credentials_published": false,
+    "canonical_workbook_published": false,
+    "private_notes_or_logs_published": false
+  }
+}
