@@ -410,8 +410,10 @@
   $$('[data-go]').forEach(button => button.addEventListener("click", () => activateTab(button.dataset.go)));
 
   function renderHeader() {
-    $("#snapshot-date").textContent = niceDate(data.meta.generated_at_utc);
-    $("#baseline-label").textContent = `First-pass target: ${data.meta.first_pass_target_end || data.meta.baseline_end || "not set"}`;
+    $("#snapshot-date").textContent = niceDate(
+      data.operations?.generated_at_utc || data.meta.generated_at_utc
+    );
+    $("#baseline-label").textContent = `Canonical tracker: ${niceDate(data.meta.generated_at_utc)} · First-pass target: ${data.meta.first_pass_target_end || data.meta.baseline_end || "not set"}`;
     const done = data.summary.baseline_status.Done || 0;
     const firstPass = data.summary.first_pass_state || {};
     const firstPassInspected = data.meta.source_count - Number(firstPass["Not inspected"] || 0);

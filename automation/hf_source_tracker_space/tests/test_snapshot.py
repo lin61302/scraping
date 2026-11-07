@@ -560,6 +560,14 @@ class SnapshotTests(unittest.TestCase):
         self.assertIn("tcg_series_availability",app)
         self.assertIn("Every pending value is published as <code>null</code>",app)
 
+    def test_hero_uses_current_operations_time_and_labels_canonical_time(self):
+        app=(ROOT/"app.js").read_text(encoding="utf-8")
+        self.assertIn(
+            "data.operations?.generated_at_utc || data.meta.generated_at_utc",
+            app,
+        )
+        self.assertIn("Canonical tracker:",app)
+
     def test_release_exposes_latest_operations_without_advancing_verified_dates(self):
         self.assertEqual(self.data["meta"]["snapshot_version"],5)
         self.assertEqual(self.data["operations"]["latest_window"]["state"],"capacity_blocked_no_launch")
