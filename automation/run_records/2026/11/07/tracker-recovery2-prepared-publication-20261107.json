@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "sanitized_zungru_tracker_recovery2_prepared_publication_provenance",
+  "occurred_at_utc": "2026-11-07T11:42:00Z",
+  "outcome": "published_verified",
+  "space": "zungru/mlp-mleed-source-tracker",
+  "space_commit": "5511d89ec8fa25c8fb29634f8c5be8fdcf3e7b06",
+  "snapshot_sha256": "3cd236b5db7b3d8015b9750096a4e9c69d3735253099a7270a200c73fad1f0e0",
+  "remote_snapshot_byte_identical": true,
+  "verification": {
+    "privacy_and_snapshot_tests": {"passed": 36, "failed": 0, "errors": 0},
+    "runtime_stage": "RUNNING",
+    "page_http": 200,
+    "static_root_http_following_redirect": 200,
+    "snapshot_http": 200,
+    "zr_comparison_space_unchanged": true
+  },
+  "operational_update": {
+    "state": "prepared_waiting_capacity",
+    "affected_sources": 3,
+    "fresh_packet_prepared_and_independently_audited": true,
+    "next_step": "one guarded one-time launch path at the next eligible scheduled window",
+    "routine_user_verification_required": false
+  },
+  "count_contracts": {
+    "source_count": 3,
+    "publication_date_field": "date_publish",
+    "current_scope_points": "null_pending_terminal_receipts",
+    "missing_history_inferred_as_zero": false
+  },
+  "boundary_effect": {
+    "source_evidence_changed": false,
+    "recorded_notion_boundary_changed": false,
+    "operational_through_changed": false,
+    "first_pass_verified_through_changed": false,
+    "strict_verified_through_changed": false
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "raw_urls_published": false,
+    "local_paths_published": false,
+    "private_hashes_published_in_tracker": false,
+    "infrastructure_details_published": false,
+    "credentials_published": false,
+    "private_process_ids_published": false
+  }
+}
