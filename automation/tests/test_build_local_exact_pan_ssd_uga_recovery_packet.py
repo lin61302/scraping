@@ -24,6 +24,17 @@ def test_scope_is_exactly_four_lanes_and_396_identities():
     assert sum(int(spec["exclusion_count"]) for spec in builder.SOURCE_SPECS.values()) == 546
 
 
+def test_recovery2_packet_identity_is_fresh():
+    assert builder.SEQUENCE_ID == (
+        "local-exact-pan-ssd-uga-repair-recovery2-20261107-through-20260930"
+    )
+    assert builder.PACKET_DIRECTORY == (
+        "local_exact_pan_ssd_uga_repair_recovery2_20261107_through_20260930"
+    )
+    assert builder.BINDING_DIRECTORY == "launcher_binding_readiness_20261107"
+    assert builder.SEQUENCE_ID != builder.CONSUMED_PREDECESSOR_FAILURE_PINS["sequence_id"]
+
+
 def test_exact_identity_hashes_are_frozen():
     assert [lane["exact_url_sha256"] for lane in builder.LANE_SPECS] == [
         "c45c685819fdccf1a0dde817e98ef9efeaa29cc7b31ff52774962deda7ae8b74",
@@ -82,6 +93,9 @@ def _runtime_proof() -> dict[str, object]:
         "packet_network_worker_ceiling": 1,
         "browser_worker_ceiling": 0,
         "plan_network_ceiling_supported": True,
+        "runtime_publication_change_scope": "launcher_and_focused_test_only",
+        "unchanged_controller_pinned_by_runtime_code_proof": True,
+        "controller_publication_change_required": False,
         "runtime_code": hashes,
         "capacity_guard_sha256": "b" * 64,
         "controller_sha256": "c" * 64,
@@ -119,6 +133,21 @@ def test_runtime_code_proof_rejects_hash_drift():
         )
 
 
+def test_runtime_code_proof_requires_unchanged_controller_pin_contract():
+    proof = _runtime_proof()
+    for field, value in (
+        ("runtime_publication_change_scope", "wrong"),
+        ("unchanged_controller_pinned_by_runtime_code_proof", False),
+        ("controller_publication_change_required", True),
+    ):
+        with pytest.raises(builder.BuildError):
+            builder.validate_runtime_code_proof(
+                dict(proof, **{field: value}), commit="1" * 40,
+                guard_commit="2" * 40, guard_receipt_sha256="f" * 64,
+                local_hashes=proof["runtime_code"],
+            )
+
+
 def test_runtime_code_proof_requires_separate_guard_publication_pin():
     proof = _runtime_proof()
     with pytest.raises(builder.BuildError):
@@ -145,12 +174,37 @@ def test_publisher_receipt_requires_remote_commit_and_all_paths():
         )
 
 
+def test_launcher_only_runtime_publication_requires_launcher_and_focused_test():
+    required = [
+        "automation/ops/launch_local_exact_sequence_once.py",
+        "automation/tests/test_launch_local_exact_sequence_once.py",
+    ]
+    value = {
+        "outcome": "published", "repository": "lin61302/scraping", "branch": "main",
+        "commit_sha": "1" * 40, "remote_sha": "1" * 40,
+        "changed_paths": list(required),
+    }
+    builder.validate_publisher_receipt(
+        value, commit="1" * 40, required_paths=required, field="runtime fixture",
+    )
+    assert "automation/ops/unattended_exact_observation_sequence.py" not in required
+    for missing in required:
+        with pytest.raises(builder.BuildError):
+            builder.validate_publisher_receipt(
+                {**value, "changed_paths": [path for path in required if path != missing]},
+                commit="1" * 40, required_paths=required, field="runtime fixture",
+            )
+
+
 def test_independent_review_requires_one_network_zero_browser():
     value = {
         "kind": "private_single_worker_runtime_independent_review", "result": "approved",
         "blocker_count": 0, "runtime_commit": "1" * 40,
         "plan_network_ceiling_supported": True,
         "packet_network_worker_ceiling": 1, "browser_worker_ceiling": 0,
+        "runtime_publication_change_scope": "launcher_and_focused_test_only",
+        "unchanged_controller_pinned_by_runtime_code_proof": True,
+        "controller_publication_change_required": False,
     }
     builder.validate_independent_review(value, commit="1" * 40)
     with pytest.raises(builder.BuildError):
@@ -180,6 +234,9 @@ def test_focused_test_record_must_be_passing_and_no_bytecode():
     value = {
         "kind": "sanitized_immutable_single_worker_recovery_test_provenance",
         "outcome": "passed", "runtime_commit": "1" * 40, "builder_commit": "2" * 40,
+        "runtime_publication_change_scope": "launcher_and_focused_test_only",
+        "unchanged_controller_pinned_by_runtime_code_proof": True,
+        "controller_publication_change_required": False,
         "file_pins": {"builder_sha256": "a" * 64, "builder_test_sha256": "b" * 64},
         "verification": {
             "python_dont_write_bytecode": True,
@@ -309,6 +366,37 @@ def test_predecessor_is_hash_pinned_without_a_path():
     assert not any("path" in key for key in builder.PREDECESSOR_PINS)
 
 
+def test_consumed_predecessor_failure_pins_are_hash_only_and_exact():
+    assert set(builder.CONSUMED_PREDECESSOR_FAILURE_PINS) == {
+        "sequence_id", "full_integrity_report_sha256", "independent_packet_audit_sha256",
+        "attempt_receipt_sha256", "launch_receipt_sha256",
+        "independent_failure_review_sha256", "sanitized_failure_provenance_commit",
+        "sanitized_failure_record_sha256",
+    }
+    assert builder.CONSUMED_PREDECESSOR_FAILURE_PINS["full_integrity_report_sha256"] == (
+        "deeab7fdf568deb3d5b65a5844561276ce91ecf68fc0ab9571f437fa74672b01"
+    )
+    assert builder.CONSUMED_PREDECESSOR_FAILURE_PINS["attempt_receipt_sha256"] == (
+        "c129d068433406d225830807c3d3d4f495a1185f261c709cc8baeb729894c640"
+    )
+    assert builder.CONSUMED_PREDECESSOR_FAILURE_PINS["launch_receipt_sha256"] == (
+        "327cb164e37fb2fc7889bb454484959505b7d78e8830e939bd0fb1ab70328b32"
+    )
+    assert builder.CONSUMED_PREDECESSOR_FAILURE_PINS["independent_failure_review_sha256"] == (
+        "65db0b1739a068df25dbd707578bdd34585cbe17c7b642b989be21e87c070cdd"
+    )
+    assert all(
+        token not in key
+        for key in builder.CONSUMED_PREDECESSOR_FAILURE_PINS
+        for token in ("path", "root", "runtime", "url")
+    )
+    for key, value in builder.CONSUMED_PREDECESSOR_FAILURE_PINS.items():
+        if key == "sequence_id":
+            continue
+        assert len(value) in {40, 64}
+        assert all(character in "0123456789abcdef" for character in value)
+
+
 def test_builder_source_freezes_one_network_zero_browser_and_offline_gates():
     text = Path(builder.__file__).read_text(encoding="utf-8")
     assert '"network_ceiling": 1' in text
@@ -318,6 +406,8 @@ def test_builder_source_freezes_one_network_zero_browser_and_offline_gates():
     assert '"capacity_guard_run": False' in text
     assert '"preflight_run": False' in text
     assert '"launcher_run": False' in text
+    assert '"consumed_predecessor_runtime_read": False' in text
+    assert '"consumed_predecessor_failure_preservation.private.json"' in text
 
 
 def test_source_monthly_contract_uses_date_publish_and_pending_not_zero():

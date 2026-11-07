@@ -22,11 +22,11 @@ from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
 
-SEQUENCE_ID = "local-exact-pan-ssd-uga-repair-recovery-20261106-through-20260930"
-PACKET_DIRECTORY = "local_exact_pan_ssd_uga_repair_recovery_20261106_through_20260930"
+SEQUENCE_ID = "local-exact-pan-ssd-uga-repair-recovery2-20261107-through-20260930"
+PACKET_DIRECTORY = "local_exact_pan_ssd_uga_repair_recovery2_20261107_through_20260930"
 TARGET_RELATIVE = Path("outputs/operations") / PACKET_DIRECTORY
 BUILD_RELATIVE = Path("outputs/operations") / ("." + PACKET_DIRECTORY + ".building")
-BINDING_DIRECTORY = "launcher_binding_readiness_20261106"
+BINDING_DIRECTORY = "launcher_binding_readiness_20261107"
 CLASSIFICATION_RELATIVE = Path(
     "outputs/operations/"
     "local_exact_unstarted4_recovery4_offline_classification_20261028_2215"
@@ -50,6 +50,17 @@ PREDECESSOR_PINS = {
     "independent_packet_audit_sha256": "1b33b8831bdc3710aa73c7b8526ee33d4cd3ce420ef723dc16ff789e3b6e7edb",
     "latest_completion_receipt_sha256": "0a2362a9282241e7abf92fa4d41fe5039dcc6e137074756b54bc398430b7e753",
     "latest_capacity_review_sha256": "d676cc56e456998fa15fb1c88dbbdcc5eddb5784279bffe108d001c139d5080e",
+}
+
+CONSUMED_PREDECESSOR_FAILURE_PINS = {
+    "sequence_id": "local-exact-pan-ssd-uga-repair-recovery-20261106-through-20260930",
+    "full_integrity_report_sha256": "deeab7fdf568deb3d5b65a5844561276ce91ecf68fc0ab9571f437fa74672b01",
+    "independent_packet_audit_sha256": "f2d8918eaf8abd14e62fd380987cd4e04bcdd052d7d3ce9e483e8effe963378e",
+    "attempt_receipt_sha256": "c129d068433406d225830807c3d3d4f495a1185f261c709cc8baeb729894c640",
+    "launch_receipt_sha256": "327cb164e37fb2fc7889bb454484959505b7d78e8830e939bd0fb1ab70328b32",
+    "independent_failure_review_sha256": "65db0b1739a068df25dbd707578bdd34585cbe17c7b642b989be21e87c070cdd",
+    "sanitized_failure_provenance_commit": "0441e3f8fe12d7ed58471aa2113bf42f2d17f610",
+    "sanitized_failure_record_sha256": "aaa27b8c21c65d18285a8bccffdfab462e6984c65756e540938b9aa18620f1ed",
 }
 
 PACKET_NETWORK_WORKER_CEILING = 1
@@ -326,6 +337,9 @@ def validate_runtime_code_proof(
         or value.get("packet_network_worker_ceiling") != 1
         or value.get("browser_worker_ceiling") != 0
         or value.get("plan_network_ceiling_supported") is not True
+        or value.get("runtime_publication_change_scope") != "launcher_and_focused_test_only"
+        or value.get("unchanged_controller_pinned_by_runtime_code_proof") is not True
+        or value.get("controller_publication_change_required") is not False
         or not isinstance(pins, Mapping)
         or dict(pins) != dict(local_hashes)
     ):
@@ -353,6 +367,9 @@ def validate_independent_review(value: Mapping[str, object], *, commit: str) -> 
         or value.get("plan_network_ceiling_supported") is not True
         or value.get("packet_network_worker_ceiling") != 1
         or value.get("browser_worker_ceiling") != 0
+        or value.get("runtime_publication_change_scope") != "launcher_and_focused_test_only"
+        or value.get("unchanged_controller_pinned_by_runtime_code_proof") is not True
+        or value.get("controller_publication_change_required") is not False
     ):
         raise BuildError("independent runtime review is not approved")
 
@@ -384,6 +401,9 @@ def validate_test_record(
         or value.get("outcome") != "passed"
         or value.get("runtime_commit") != commit
         or value.get("builder_commit") != builder_commit
+        or value.get("runtime_publication_change_scope") != "launcher_and_focused_test_only"
+        or value.get("unchanged_controller_pinned_by_runtime_code_proof") is not True
+        or value.get("controller_publication_change_required") is not False
         or not isinstance(file_pins, Mapping)
         or file_pins.get("builder_sha256") != builder_sha256
         or file_pins.get("builder_test_sha256") != test_sha256
@@ -498,8 +518,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         read_json(receipts["runtime_publication_receipt.private.json"][0]),
         commit=args.runtime_commit,
         required_paths=[
-            "automation/ops/unattended_exact_observation_sequence.py",
             "automation/ops/launch_local_exact_sequence_once.py",
+            "automation/tests/test_launch_local_exact_sequence_once.py",
         ],
         field="runtime publication receipt",
     )
@@ -789,6 +809,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         "recovery_lineage": {
             "predecessor": PREDECESSOR_PINS, "predecessor_opened_or_modified": False,
+            "consumed_predecessor_failure": CONSUMED_PREDECESSOR_FAILURE_PINS,
+            "consumed_predecessor_packet_opened_or_modified": False,
+            "consumed_predecessor_runtime_read": False,
+            "consumed_predecessor_retry_resume_or_relaunch": False,
             "sealed_offline_classification_sha256": CLASSIFICATION_SEAL_SHA256,
             "sealed_offline_classification_audit_sha256": CLASSIFICATION_AUDIT_SHA256,
             "candidate_count": 396, "preserved_pass_count": 1240,
@@ -897,6 +921,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         "sequence_id": SEQUENCE_ID, "predecessor": PREDECESSOR_PINS,
         "predecessor_packet_opened": False, "predecessor_runtime_read": False,
         "predecessor_modified": False, "predecessor_resume_supported": False,
+    })
+    consumed_predecessor_path = build_root / "consumed_predecessor_failure_preservation.private.json"
+    write_json(consumed_predecessor_path, {
+        "schema_version": 1,
+        "kind": "private_consumed_predecessor_failure_preservation_proof",
+        "sequence_id": SEQUENCE_ID,
+        "consumed_predecessor": CONSUMED_PREDECESSOR_FAILURE_PINS,
+        "sole_initial_attempt_consumed": True,
+        "permanently_closed": True,
+        "retry_supported": False,
+        "resume_supported": False,
+        "reuse_supported": False,
+        "relaunch_supported": False,
+        "consumed_predecessor_packet_opened": False,
+        "consumed_predecessor_runtime_read": False,
+        "consumed_predecessor_modified": False,
+        "source_or_network_work_proven": False,
+        "production_writes": False,
     })
     parent_path = build_root / "sealed_parent_proof.private.json"
     write_json(parent_path, {
@@ -1007,7 +1049,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     binding_path = binding_dir / "launcher_binding.private.json"
     write_json(binding_path, {
         "schema_version": 1, "kind": "private_local_exact_launcher_binding",
-        "binding_id": "pan-ssd-uga-recovery-launcher-binding-20261106",
+        "binding_id": "pan-ssd-uga-recovery2-launcher-binding-20261107",
         "sequence_id": SEQUENCE_ID, "created_at_utc": args.created_at_utc,
         "repository": "lin61302/scraping", "branch": "main", "production_writes": False,
         "execution_authorized": False, "execute_now": False, "resume_supported": False,
@@ -1029,6 +1071,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "identity_proof_sha256": sha256_path(identity_path),
             "sealed_parent_proof_sha256": sha256_path(parent_path),
             "predecessor_preservation_sha256": sha256_path(predecessor_path),
+            "consumed_predecessor_failure_preservation_sha256": sha256_path(consumed_predecessor_path),
             "source_count_tcg_handoff_sha256": sha256_path(count_path),
             "publication_pins_sha256": sha256_path(publication_path),
             "deployment_directory_modes_sha256": sha256_path(deployment_modes_path),
@@ -1047,6 +1090,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "gates": {
             "runtime_and_builder_published": True, "independent_code_review_pinned": True,
             "sealed_classification_parent_only": True, "predecessor_packet_opened": False,
+            "consumed_predecessor_packet_opened": False,
+            "consumed_predecessor_runtime_read": False,
             "closed_runtime_read": False, "rediscovery": False, "capacity_guard_run": False,
             "process_inspection_run": False, "preflight_run": False,
             "authorization_created": False, "launcher_run": False,
@@ -1103,6 +1148,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "deployment_sha256": deployment_sha, "identity_proof_sha256": sha256_path(identity_path),
             "sealed_parent_proof_sha256": sha256_path(parent_path),
             "predecessor_preservation_sha256": sha256_path(predecessor_path),
+            "consumed_predecessor_failure_preservation_sha256": sha256_path(consumed_predecessor_path),
             "source_count_tcg_handoff_sha256": sha256_path(count_path),
             "publication_pins_sha256": sha256_path(publication_path),
             "binding_sha256": sha256_path(binding_path), "readiness_sha256": sha256_path(readiness_path),
@@ -1116,7 +1162,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     })
 
     core_artifacts = [
-        manifest_path, identity_path, parent_path, predecessor_path, count_path,
+        manifest_path, identity_path, parent_path, predecessor_path,
+        consumed_predecessor_path, count_path,
         publication_path, deployment_list_path, digest_rows_path, deployment_sha_path,
         deployment_modes_path, packet_modes_path, binding_path, readiness_path,
         binding_integrity_path, recipe_path, construction_path,
@@ -1144,6 +1191,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "network_ceiling_1_browser_ceiling_0": True,
             "macos_capacity_guard_pinned": True, "log_cap_50_mib": True,
             "no_rediscovery": True, "no_predecessor_or_closed_runtime_read": True,
+            "consumed_predecessor_failure_preserved_without_runtime_read": True,
             "no_guard_process_network_preflight_authorization_or_launch": True,
             "source_monthly_count_tcg_handoff_pinned": True,
         },
