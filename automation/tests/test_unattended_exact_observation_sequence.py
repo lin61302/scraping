@@ -293,6 +293,56 @@ def test_plan_rejects_production_writes_rediscovery_and_parent_drift():
             fixture.load()
 
 
+def test_plan_accepts_one_network_worker_and_rejects_other_ceilings():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        payload = json.loads(json.dumps(fixture.payload))
+        payload["capacity"]["network_ceiling"] = 1
+        payload["phases"][0]["lanes"][0]["workers"] = 1
+        plan = fixture.load(payload)
+        assert plan.network_ceiling == 1
+        assert plan.phases[0].lanes[0].workers == 1
+
+        for invalid in (0, 3, True):
+            rejected = json.loads(json.dumps(payload))
+            rejected["capacity"]["network_ceiling"] = invalid
+            with pytest.raises(sequence.PlanError, match="capacity contract"):
+                fixture.load(rejected)
+
+        overweight = json.loads(json.dumps(payload))
+        second = json.loads(json.dumps(overweight["phases"][0]["lanes"][0]))
+        second["lane_id"] = "exact-second"
+        overweight["phases"][0]["max_active_lanes"] = 2
+        overweight["phases"][0]["lanes"].append(second)
+        with pytest.raises(sequence.PlanError, match="max_active_lanes"):
+            fixture.load(overweight)
+
+
+def test_capacity_report_caps_shared_recommendation_to_one_worker():
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Fixture(Path(directory))
+        shared = {
+            "status": "green",
+            "launch_allowed": True,
+            "recommended_limits": {"network_workers": 4, "browser_workers": 1},
+        }
+        with (
+            mock.patch.object(sequence, "collect_metrics", return_value={}),
+            mock.patch.object(sequence, "evaluate_capacity", return_value=shared),
+        ):
+            report = sequence.capacity_report(
+                fixture.runtime, "one-worker-fixture", network_ceiling=1,
+            )
+        assert report["sequence_limits"] == {
+            "network_workers": 1,
+            "browser_workers": 0,
+        }
+        with pytest.raises(sequence.PlanError, match="unsupported sequence"):
+            sequence.capacity_report(
+                fixture.runtime, "invalid-worker-fixture", network_ceiling=3,
+            )
+
+
 def test_exact_command_has_private_url_and_parent_pins_but_no_discovery_mode():
     with tempfile.TemporaryDirectory() as directory:
         fixture = Fixture(Path(directory))

@@ -4,8 +4,8 @@
 The controller accepts only immutable observation plans with
 ``production_writes=false``.  A phase can contain bounded discovery-only lanes
 or exact URL lanes.  Phases are barriers; failures are isolated and later
-lanes continue.  At most two network workers and zero browser workers are
-admitted across the sequence.
+lanes continue.  Each plan selects a fail-closed ceiling of one or two
+network workers; zero browser workers are admitted across the sequence.
 
 Exact lanes reuse ``scripts/parallel_observe_pure.py`` with a pinned private
 URL file and pinned parent artifacts.  They never rediscover a source.
@@ -56,6 +56,7 @@ FORBIDDEN_CALLS = frozenset({
 })
 OBSERVER_LOG_MAX_BYTES = 50 * 1024 * 1024
 NETWORK_CEILING = 2
+ALLOWED_NETWORK_CEILINGS = frozenset({1, NETWORK_CEILING})
 BROWSER_CEILING = 0
 MAX_WALL_SECONDS = 43_200
 PYTHON_NO_BYTECODE_FLAG = "-B"
@@ -158,6 +159,7 @@ class SequencePlan:
     code_git_commit: str
     execution_files: Tuple[FilePin, ...]
     phases: Tuple[PhaseSpec, ...]
+    network_ceiling: int
     max_wall_seconds: int
     log_max_bytes: int
 
@@ -735,8 +737,10 @@ def load_plan(
     capacity = payload.get("capacity")
     if not isinstance(capacity, Mapping):
         raise PlanError("missing capacity contract")
+    network_ceiling = capacity.get("network_ceiling")
     if (
-        capacity.get("network_ceiling") != NETWORK_CEILING
+        type(network_ceiling) is not int
+        or network_ceiling not in ALLOWED_NETWORK_CEILINGS
         or capacity.get("browser_ceiling") != BROWSER_CEILING
         or capacity.get("log_max_bytes") != OBSERVER_LOG_MAX_BYTES
     ):
@@ -794,7 +798,7 @@ def load_plan(
         max_active = positive_int(
             raw_phase.get("max_active_lanes"),
             "phases[%s].max_active_lanes" % phase_index,
-            NETWORK_CEILING,
+            network_ceiling,
         )
         raw_lanes = raw_phase.get("lanes")
         if not isinstance(raw_lanes, list) or not raw_lanes:
@@ -825,7 +829,7 @@ def load_plan(
             end = parse_date(raw_lane.get("end"), "lane.end")
             if start > end:
                 raise PlanError("lane window is reversed")
-            workers = positive_int(raw_lane.get("workers"), "lane.workers", NETWORK_CEILING)
+            workers = positive_int(raw_lane.get("workers"), "lane.workers", network_ceiling)
             timeout_seconds = positive_int(
                 raw_lane.get("timeout_seconds"), "lane.timeout_seconds", MAX_WALL_SECONDS,
             )
@@ -914,8 +918,8 @@ def load_plan(
                 repair_class=repair_class,
             ))
         largest = sorted((lane.workers for lane in lanes), reverse=True)[:max_active]
-        if sum(largest) > NETWORK_CEILING:
-            raise PlanError("phase lane weights exceed the two-network-worker ceiling")
+        if sum(largest) > network_ceiling:
+            raise PlanError("phase lane weights exceed the plan network-worker ceiling")
         phases.append(PhaseSpec(phase_id, max_active, tuple(lanes)))
     return SequencePlan(
         sequence_id=sequence_id,
@@ -923,12 +927,18 @@ def load_plan(
         code_git_commit=code_git_commit,
         execution_files=execution_files,
         phases=tuple(phases),
+        network_ceiling=network_ceiling,
         max_wall_seconds=max_wall_seconds,
         log_max_bytes=OBSERVER_LOG_MAX_BYTES,
     )
 
 
-def capacity_report(runtime: RuntimePaths, sequence_id: str) -> Mapping[str, object]:
+def capacity_report(
+    runtime: RuntimePaths, sequence_id: str,
+    network_ceiling: int = NETWORK_CEILING,
+) -> Mapping[str, object]:
+    if type(network_ceiling) is not int or network_ceiling not in ALLOWED_NETWORK_CEILINGS:
+        raise PlanError("unsupported sequence network ceiling")
     receipt_dir = runtime.receipt_root / sequence_id
     output_dir = runtime.output_root / sequence_id
     metrics = collect_metrics(
@@ -948,7 +958,7 @@ def capacity_report(runtime: RuntimePaths, sequence_id: str) -> Mapping[str, obj
     recommended = report.get("recommended_limits")
     if isinstance(recommended, Mapping):
         report["sequence_limits"] = {
-            "network_workers": min(NETWORK_CEILING, int(recommended.get("network_workers", 0))),
+            "network_workers": min(network_ceiling, int(recommended.get("network_workers", 0))),
             "browser_workers": 0,
         }
     return report
@@ -1272,7 +1282,7 @@ class SequenceController:
         self.events = self.sequence_dir / "events.jsonl"
         self.deadline = 0.0
         self.capacity_reporter = capacity_reporter or (
-            lambda: capacity_report(runtime, plan.sequence_id)
+            lambda: capacity_report(runtime, plan.sequence_id, plan.network_ceiling)
         )
         self.event_lock = threading.Lock()
         self.guard_lock = threading.Lock()
@@ -1681,7 +1691,7 @@ class SequenceController:
             "code_git_commit": self.plan.code_git_commit,
             "execution_pin_verification": self.verify_global_pins(),
             "capacity": {
-                "network": NETWORK_CEILING,
+                "network": self.plan.network_ceiling,
                 "browser": BROWSER_CEILING,
                 "log_max_bytes": OBSERVER_LOG_MAX_BYTES,
             },
@@ -2186,7 +2196,8 @@ class SequenceController:
                         recommended = recommended if isinstance(recommended, Mapping) else {}
                         limits = {
                             "network_workers": min(
-                                NETWORK_CEILING, int(recommended.get("network_workers", 0)),
+                                self.plan.network_ceiling,
+                                int(recommended.get("network_workers", 0)),
                             ),
                             "browser_workers": 0,
                         }
@@ -2272,7 +2283,7 @@ class SequenceController:
                     "code_git_commit": self.plan.code_git_commit,
                     "execution_pin_verification": pins,
                     "capacity": {
-                        "network": NETWORK_CEILING,
+                        "network": self.plan.network_ceiling,
                         "browser": BROWSER_CEILING,
                         "log_max_bytes": OBSERVER_LOG_MAX_BYTES,
                     },

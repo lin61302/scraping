@@ -59,12 +59,12 @@ def write_private(path: Path, text: str) -> Path:
     return path
 
 
-def green_capacity() -> dict[str, object]:
+def green_capacity(workers: int = 2) -> dict[str, object]:
     return {
         "status": "reduced",
         "launch_allowed": True,
-        "recommended_limits": {"network_workers": 2, "browser_workers": 0},
-        "sequence_limits": {"network_workers": 2, "browser_workers": 0},
+        "recommended_limits": {"network_workers": workers, "browser_workers": 0},
+        "sequence_limits": {"network_workers": workers, "browser_workers": 0},
         "metrics": {"scrape_processes": 0, "browser_processes": 0},
         "reasons": [],
     }
@@ -125,8 +125,9 @@ class FakeProcess:
 class LauncherFixture:
     """One exact URL and one parent, with no runnable adapter behavior."""
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, network_ceiling: int = 2):
         self.root = private_dir(root)
+        self.network_ceiling = network_ceiling
         self.deployment_sha256 = "d" * 64
         self.deployment = private_dir(
             root / "deployments" / self.deployment_sha256,
@@ -204,7 +205,7 @@ class LauncherFixture:
                 "code_git_commit": "1" * 40,
             },
             "capacity": {
-                "network_ceiling": 2,
+                "network_ceiling": network_ceiling,
                 "browser_ceiling": 0,
                 "max_wall_seconds": 60,
                 "log_max_bytes": 50 * 1024 * 1024,
@@ -225,7 +226,7 @@ class LauncherFixture:
                     },
                     "start": "2026-09-01",
                     "end": "2026-09-30",
-                    "workers": 2,
+                    "workers": network_ceiling,
                     "timeout_seconds": 30,
                     "rediscovery": False,
                     "repair_class": "parser_exact",
@@ -307,7 +308,7 @@ class LauncherFixture:
             "repository": "lin61302/scraping",
             "branch": "main",
             "code_git_commit": payload["provenance"]["code_git_commit"],
-            "network_ceiling": 2,
+            "network_ceiling": network_ceiling,
             "browser_ceiling": 0,
             "deployment_sha256": self.deployment_sha256,
             "controller_sha256": sha(deployed_controller),
@@ -398,11 +399,11 @@ class LauncherFixture:
             "code_git_commit": "1" * 40,
             "execution_pin_verification": execution,
             "capacity": {
-                "network": 2,
+                "network": self.network_ceiling,
                 "browser": 0,
                 "log_max_bytes": 50 * 1024 * 1024,
             },
-            "host_capacity_guard": green_capacity(),
+            "host_capacity_guard": green_capacity(self.network_ceiling),
             "production_writes": False,
             "pid": pid,
         }
@@ -423,6 +424,51 @@ def test_preflight_is_read_only_and_pins_exact_contract(tmp_path):
     assert not (fixture.receipts / preflight["sequence_id"]).exists()
     assert not (fixture.output / preflight["sequence_id"]).exists()
     assert deployment_snapshot(fixture.deployment) == deployment_before
+
+
+def test_one_worker_plan_is_preserved_by_preflight_and_capacity_gates(tmp_path):
+    fixture = LauncherFixture(tmp_path, network_ceiling=1)
+    with mock.patch.object(
+        launcher, "local_capacity_report", return_value=green_capacity(1),
+    ):
+        prepared = launcher.prepare(fixture.args())
+        preflight = launcher.public_preflight(prepared)
+    assert prepared["plan"].network_ceiling == 1
+    assert preflight["network_ceiling"] == 1
+    assert preflight["capacity"]["sequence_limits"]["network_workers"] == 1
+    assert launcher._capacity_errors(green_capacity(1), 1) == []
+    assert launcher._startup_capacity_errors(green_capacity(1), 1) == []
+    assert "plan_network_workers_unavailable" in launcher._capacity_errors(
+        green_capacity(0), 1,
+    )
+
+
+def test_local_capacity_report_caps_shared_recommendation_to_one_worker(tmp_path):
+    fixture = LauncherFixture(tmp_path, network_ceiling=1)
+    runtime = launcher.RuntimePaths(
+        python=Path(sys.executable),
+        deployment_root=fixture.deployment,
+        automation_root=fixture.automation,
+        output_root=fixture.output,
+        receipt_root=fixture.receipts,
+        host_lock_path=fixture.locks / "exact.lock",
+        allowed_parent_roots=(fixture.parents,),
+    )
+    shared = {
+        "status": "green",
+        "launch_allowed": True,
+        "recommended_limits": {"network_workers": 4, "browser_workers": 1},
+        "metrics": {"scrape_processes": 0, "browser_processes": 0},
+    }
+    with (
+        mock.patch.object(launcher, "collect_metrics", return_value={}),
+        mock.patch.object(launcher, "evaluate_capacity", return_value=shared),
+    ):
+        report = launcher.local_capacity_report(runtime, network_ceiling=1)
+    assert report["sequence_limits"] == {
+        "network_workers": 1,
+        "browser_workers": 0,
+    }
 
 
 def test_launcher_disables_bytecode_before_deployment_local_imports():
@@ -547,8 +593,11 @@ def test_controller_startup_command_preserves_deployment_closure(tmp_path):
     assert not list(fixture.deployment.rglob("*.py[co]"))
 
 
-def test_single_use_detached_launch_is_private_and_redacted(tmp_path, monkeypatch):
-    fixture = LauncherFixture(tmp_path)
+@pytest.mark.parametrize("network_ceiling", (1, 2))
+def test_single_use_detached_launch_is_private_and_redacted(
+    tmp_path, monkeypatch, network_ceiling,
+):
+    fixture = LauncherFixture(tmp_path, network_ceiling=network_ceiling)
     captured: dict[str, object] = {}
     monkeypatch.setenv("MONGODB_URI", "mongodb://do-not-forward")
 
@@ -568,7 +617,10 @@ def test_single_use_detached_launch_is_private_and_redacted(tmp_path, monkeypatc
         return FakeProcess()
 
     with (
-        mock.patch.object(launcher, "local_capacity_report", return_value=green_capacity()),
+        mock.patch.object(
+            launcher, "local_capacity_report",
+            return_value=green_capacity(network_ceiling),
+        ),
         mock.patch.object(launcher, "process_belongs_to_group", return_value=True),
         mock.patch.object(launcher.subprocess, "Popen", side_effect=fake_popen) as popen,
         mock.patch.object(launcher, "_inspect_startup", side_effect=inspect_now),
@@ -581,7 +633,7 @@ def test_single_use_detached_launch_is_private_and_redacted(tmp_path, monkeypatc
         with pytest.raises(launcher.LaunchError):
             launcher.launch(fixture.args())
     assert receipt["status"] == "launched_unattended"
-    assert receipt["network_ceiling"] == 2
+    assert receipt["network_ceiling"] == network_ceiling
     assert receipt["browser_ceiling"] == 0
     assert receipt["production_writes"] is False
     assert receipt["automatic_resume"] is False

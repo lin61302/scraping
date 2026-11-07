@@ -254,7 +254,7 @@ def verify_deployment_manifest(
         "repository": "lin61302/scraping",
         "branch": "main",
         "code_git_commit": plan.code_git_commit,
-        "network_ceiling": NETWORK_CEILING,
+        "network_ceiling": plan.network_ceiling,
         "browser_ceiling": BROWSER_CEILING,
         "deployment_sha256": deployment_sha256,
         "controller_sha256": controller_sha256,
@@ -371,7 +371,9 @@ def _command_sha256(command: Sequence[str]) -> str:
     ).hexdigest()
 
 
-def local_capacity_report(runtime: RuntimePaths) -> dict[str, object]:
+def local_capacity_report(
+    runtime: RuntimePaths, network_ceiling: int = NETWORK_CEILING,
+) -> dict[str, object]:
     metrics = collect_metrics(
         runtime.deployment_root,
         [runtime.receipt_root],
@@ -384,14 +386,16 @@ def local_capacity_report(runtime: RuntimePaths) -> dict[str, object]:
     if isinstance(recommended, Mapping):
         report["sequence_limits"] = {
             "network_workers": min(
-                NETWORK_CEILING, int(recommended.get("network_workers") or 0),
+                network_ceiling, int(recommended.get("network_workers") or 0),
             ),
             "browser_workers": 0,
         }
     return report
 
 
-def _capacity_errors(report: Mapping[str, object]) -> list[str]:
+def _capacity_errors(
+    report: Mapping[str, object], network_ceiling: int = NETWORK_CEILING,
+) -> list[str]:
     errors: list[str] = []
     if report.get("launch_allowed") is not True or report.get("status") == "blocked":
         errors.append("shared_capacity_guard_blocked")
@@ -399,8 +403,8 @@ def _capacity_errors(report: Mapping[str, object]) -> list[str]:
     if not isinstance(limits, Mapping):
         errors.append("sequence_limits_missing")
     else:
-        if int(limits.get("network_workers") or 0) < NETWORK_CEILING:
-            errors.append("two_network_workers_unavailable")
+        if int(limits.get("network_workers") or 0) < network_ceiling:
+            errors.append("plan_network_workers_unavailable")
         if int(limits.get("browser_workers") or 0) != 0:
             errors.append("browser_limit_not_zero")
     metrics = report.get("metrics")
@@ -414,7 +418,9 @@ def _capacity_errors(report: Mapping[str, object]) -> list[str]:
     return errors
 
 
-def _startup_capacity_errors(report: object) -> list[str]:
+def _startup_capacity_errors(
+    report: object, network_ceiling: int = NETWORK_CEILING,
+) -> list[str]:
     if not isinstance(report, Mapping):
         return ["startup_capacity_missing"]
     errors: list[str] = []
@@ -424,8 +430,8 @@ def _startup_capacity_errors(report: object) -> list[str]:
     if not isinstance(limits, Mapping):
         errors.append("startup_sequence_limits_missing")
     else:
-        if int(limits.get("network_workers") or 0) < NETWORK_CEILING:
-            errors.append("startup_two_network_workers_unavailable")
+        if int(limits.get("network_workers") or 0) < network_ceiling:
+            errors.append("startup_plan_network_workers_unavailable")
         if int(limits.get("browser_workers") or 0) != BROWSER_CEILING:
             errors.append("startup_browser_limit_not_zero")
     metrics = report.get("metrics")
@@ -452,6 +458,7 @@ def _startup_capacity_errors(report: object) -> list[str]:
 
 def _post_start_capacity_errors(
     report: Mapping[str, object], process_snapshot: Mapping[str, object],
+    network_ceiling: int = NETWORK_CEILING,
 ) -> list[str]:
     errors: list[str] = []
     if report.get("launch_allowed") is not True or report.get("status") == "blocked":
@@ -460,8 +467,8 @@ def _post_start_capacity_errors(
     if not isinstance(limits, Mapping):
         errors.append("post_start_sequence_limits_missing")
     else:
-        if int(limits.get("network_workers") or 0) < NETWORK_CEILING:
-            errors.append("post_start_two_network_workers_unavailable")
+        if int(limits.get("network_workers") or 0) < network_ceiling:
+            errors.append("post_start_plan_network_workers_unavailable")
         if int(limits.get("browser_workers") or 0) != BROWSER_CEILING:
             errors.append("post_start_browser_limit_not_zero")
     metrics = report.get("metrics")
@@ -909,8 +916,8 @@ def prepare(args: argparse.Namespace) -> dict[str, object]:
         plan_path=plan_path,
         controller_sha256=expected_controller,
     )
-    capacity = local_capacity_report(runtime)
-    blockers = _capacity_errors(capacity)
+    capacity = local_capacity_report(runtime, plan.network_ceiling)
+    blockers = _capacity_errors(capacity, plan.network_ceiling)
     if blockers:
         raise LaunchError("local capacity gate closed: %s" % ",".join(blockers))
     controller_command = build_controller_command(
@@ -962,7 +969,7 @@ def public_preflight(prepared: Mapping[str, object]) -> dict[str, object]:
         "phase_count": len(plan.phases),
         "lane_count": lane_count,
         "capacity": prepared["capacity"],
-        "network_ceiling": NETWORK_CEILING,
+        "network_ceiling": plan.network_ceiling,
         "browser_ceiling": BROWSER_CEILING,
         "log_max_bytes": OBSERVER_LOG_MAX_BYTES,
         "startup_inspection_seconds": int(STARTUP_INSPECTION_SECONDS),
@@ -1032,7 +1039,7 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
             "deployment_sha256": prepared["deployment"]["deployment_sha256"],
             "command_sha256": _command_sha256(command),
             "host_capacity_guard": prepared["capacity"],
-            "network_ceiling": NETWORK_CEILING,
+            "network_ceiling": plan.network_ceiling,
             "browser_ceiling": BROWSER_CEILING,
             "production_writes": False,
         }
@@ -1068,7 +1075,7 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                 raise LaunchError("startup receipt missing after bounded inspection")
             validated_startup = controller.validate_sequence_startup(startup_path)
             startup_capacity_blockers = _startup_capacity_errors(
-                validated_startup.get("host_capacity_guard"),
+                validated_startup.get("host_capacity_guard"), plan.network_ceiling,
             )
             if startup_capacity_blockers:
                 cleanup = terminate_process_group(process, cleanup_tokens)
@@ -1113,12 +1120,12 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                             "terminal exit mismatch and runtime did not quiesce"
                         )
                     raise LaunchError("controller exit code differs from terminal state")
-            post_start_capacity = local_capacity_report(runtime)
+            post_start_capacity = local_capacity_report(runtime, plan.network_ceiling)
             post_start_processes = classify_post_start_processes(
                 process.pid, cleanup_tokens,
             )
             post_start_blockers = _post_start_capacity_errors(
-                post_start_capacity, post_start_processes,
+                post_start_capacity, post_start_processes, plan.network_ceiling,
             )
             if post_start_blockers:
                 cleanup = terminate_process_group(process, cleanup_tokens)
@@ -1155,7 +1162,7 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                 "detached_pid": process.pid,
                 "controller_pid": startup.get("pid"),
                 "startup_inspection_seconds": int(STARTUP_INSPECTION_SECONDS),
-                "network_ceiling": NETWORK_CEILING,
+                "network_ceiling": plan.network_ceiling,
                 "browser_ceiling": BROWSER_CEILING,
                 "production_writes": False,
                 "automatic_resume": False,
