@@ -80,6 +80,29 @@
     return queued ? `Agent queue · ${action}` : action;
   }
 
+  function operationStateLabel(value) {
+    const labels = {
+      capacity_blocked_no_launch: "Capacity blocked · no launch",
+      prepared_waiting_capacity: "Prepared · waiting for capacity",
+      running_unattended: "Running unattended",
+      terminal_review_pending: "Terminal · agent review pending",
+      terminal_reconciled: "Terminal · reconciled",
+    };
+    return labels[value] || String(value || "Not recorded").replaceAll("_", " ");
+  }
+
+  function renderOperationsStatus() {
+    const root = $("#operations-status");
+    const operation = data.operations;
+    const latest = operation?.latest_window;
+    if (!root || !latest) {
+      if (root) root.hidden = true;
+      return;
+    }
+    const blocked = Number(latest.consecutive_blocked_windows || 0);
+    root.innerHTML = `<div><span class="section-kicker">Latest scheduled operation</span><strong>${esc(operationStateLabel(latest.state))}</strong><p>${esc(latest.summary)}</p></div><dl><div><dt>Window</dt><dd>${esc(latest.scheduled_local)} ${esc(latest.timezone)}</dd></div><div><dt>Evidence through</dt><dd>${esc(niceDate(latest.evidence_through_utc))}</dd></div><div><dt>Sources with current overrides</dt><dd>${esc(operation.source_override_count)}</dd></div>${blocked ? `<div><dt>Consecutive capacity blocks</dt><dd>${esc(blocked)}</dd></div>` : ""}<div><dt>Source/network work started</dt><dd>${latest.work_started ? "Yes" : "No"}</dd></div></dl>`;
+  }
+
   function injectSourceDirectoryStyles() {
     if ($("#source-directory-styles")) return;
     const style = document.createElement("style");
@@ -95,7 +118,7 @@
       .source-directory-intro h2{font-family:Georgia,serif;font-weight:500;margin:3px 0 5px;font-size:1.55rem}.source-directory-intro p{margin:0;color:var(--muted);font-size:.83rem;line-height:1.5}
       .source-primary{min-width:230px}.source-primary strong{display:block;color:var(--navy);font-size:.86rem}.source-primary small{display:block;color:var(--muted);font-size:.67rem;margin-top:3px}
       .boundary-cell{min-width:122px}.boundary-cell strong{display:block;color:#344851;font-size:.76rem}.boundary-cell small{display:block;color:var(--muted);font-size:.64rem;margin-top:3px}
-      .action-cell{min-width:230px;max-width:310px}.action-cell .pill{margin-bottom:5px}.action-cell p{margin:0;color:#56636c;font-size:.73rem;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+      .action-cell{min-width:230px;max-width:310px}.action-cell .pill{margin-bottom:5px}.action-cell p{margin:0;color:#56636c;font-size:.73rem;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.stage-cell{min-width:190px}.stage-cell strong{display:block;color:#344851;font-size:.76rem;line-height:1.35}.stage-cell small{display:block;color:var(--muted);font-size:.62rem;margin-top:4px}
       .source-table-wrap{max-height:68vh}.source-table-wrap th{z-index:2}.source-table-wrap td:first-child,.source-table-wrap th:first-child{position:sticky;left:0;z-index:1;background:var(--card)}.source-table-wrap th:first-child{z-index:3;background:#f7f5f0}.source-table-wrap tbody tr:hover td:first-child{background:#f5faf8}
       .pill.complete-through-target{background:#dcefe9;color:#17685e}.pill.inspected-verification-pending,.pill.inspected-agent-verification-queued{background:#f7e9c9;color:#845d16}.pill.verified-through-earlier-boundary{background:#dfeaf4;color:#315f85}.pill.not-inspected{background:#ece9e3;color:#66615a}
       .page-size-label{display:flex;align-items:center;gap:7px}.page-size-label span{font-weight:700}.page-size-label select{padding:6px 28px 6px 8px}
@@ -106,7 +129,7 @@
       .source-row-hint{color:var(--muted);font-size:.68rem;margin-top:4px}.source-table-wrap tbody tr:focus{outline:3px solid rgba(22,127,122,.26);outline-offset:-3px;background:#f5faf8}
       .count-chart{border:1px solid var(--line);border-radius:14px;background:#faf9f6;padding:14px 14px 10px}.count-chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:8px}.count-chart-head strong{display:block;color:var(--navy);font-size:.88rem}.count-chart-head small{display:block;color:var(--muted);font-size:.66rem;line-height:1.4;margin-top:3px}.count-legend{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px 12px;color:#51616a;font-size:.66rem}.count-legend span{display:inline-flex;align-items:center;gap:5px}.count-legend i{display:inline-block;width:18px;height:3px;border-radius:4px}.count-legend .scraped i{background:#167f7a}.count-legend .tcg i{background:#bd7a20}.count-legend .missing{color:var(--muted);font-style:italic}.count-chart svg{display:block;width:100%;height:auto;overflow:visible}.count-grid{stroke:#dcd8d0;stroke-width:1}.count-axis-label{fill:#758087;font-size:10px}.count-line{fill:none;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.count-line.scraped{stroke:#167f7a}.count-line.tcg{stroke:#bd7a20}.count-point.scraped{fill:#167f7a}.count-point.tcg{fill:#bd7a20}.count-chart-note{margin:8px 2px 0;color:#657078;font-size:.66rem;line-height:1.45}.count-chart-empty{border:1px dashed #c8c2b8;border-radius:14px;background:#faf9f6;padding:18px;color:#53616a}.count-chart-empty strong{display:block;color:var(--navy);font-size:.85rem;margin-bottom:5px}.count-chart-empty p{margin:0;font-size:.72rem;line-height:1.5}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
       @media(max-width:1100px){.source-position-band{grid-template-columns:repeat(3,1fr)}.source-table-wrap{max-height:none}}
-      @media(max-width:720px){.source-position-band{grid-template-columns:repeat(2,1fr)}.position-tile{min-height:82px}.source-directory-intro{align-items:stretch;flex-direction:column}.detail-drawer{width:100vw;padding:22px 20px 32px}.detail-head{top:-22px;padding-top:22px}.coverage-track{grid-template-columns:1fr}.processing-track{grid-template-columns:1fr}.detail-grid,.detail-copy{grid-template-columns:1fr}.count-chart-head{display:block}.count-legend{justify-content:flex-start;margin-top:8px}.source-table-wrap td:nth-child(4),.source-table-wrap th:nth-child(4),.source-table-wrap td:nth-child(7),.source-table-wrap th:nth-child(7),.source-table-wrap td:nth-child(8),.source-table-wrap th:nth-child(8){display:none}}
+      @media(max-width:720px){.source-position-band{grid-template-columns:repeat(2,1fr)}.position-tile{min-height:82px}.source-directory-intro{align-items:stretch;flex-direction:column}.detail-drawer{width:100vw;padding:22px 20px 32px}.detail-head{top:-22px;padding-top:22px}.coverage-track{grid-template-columns:1fr}.processing-track{grid-template-columns:1fr}.detail-grid,.detail-copy{grid-template-columns:1fr}.count-chart-head{display:block}.count-legend{justify-content:flex-start;margin-top:8px}.source-table-wrap td:nth-child(3),.source-table-wrap th:nth-child(3),.source-table-wrap td:nth-child(4),.source-table-wrap th:nth-child(4),.source-table-wrap td:nth-child(5),.source-table-wrap th:nth-child(5),.source-table-wrap td:nth-child(6),.source-table-wrap th:nth-child(6),.source-table-wrap td:nth-child(9),.source-table-wrap th:nth-child(9),.source-table-wrap td:nth-child(10),.source-table-wrap th:nth-child(10){display:none}}
     `;
     document.head.append(style);
   }
@@ -148,6 +171,7 @@
       <th data-sort="first_pass_verified_through">First-pass verified</th>
       <th data-sort="verified_through">Strict verified</th>
       <th data-sort="pipeline_state">Current stage</th>
+      <th data-sort="scrape_series_availability">Count series</th>
       <th data-sort="attention_state">Attention and next action</th>
       <th data-sort="last_checked">Last checked</th>`;
 
@@ -718,7 +742,7 @@
   function applySourceFilters() {
     const term = $("#source-search").value.trim().toLowerCase();
     const country = $("#filter-country").value, project = $("#filter-project").value, baseline = $("#filter-baseline").value, attention = $("#filter-attention").value, firstPass = $("#filter-first-pass").value;
-    state.filtered = data.sources.filter(r => (!country || r.country === country) && (!project || r.project === project) && (!baseline || r.baseline_status === baseline) && (!attention || r.attention_state === attention) && (!firstPass || r.first_pass_state === firstPass) && (!term || [r.source,r.country,r.problem_summary,r.next_action,r.scraping_progress,r.first_pass_state,r.first_pass_note,r.scrape_record_basis,r.tcg_record_state,r.tcg_record_basis,r.stage].join(" ").toLowerCase().includes(term)));
+    state.filtered = data.sources.filter(r => (!country || r.country === country) && (!project || r.project === project) && (!baseline || r.baseline_status === baseline) && (!attention || r.attention_state === attention) && (!firstPass || r.first_pass_state === firstPass) && (!term || [r.source,r.country,r.problem_summary,r.next_action,r.scraping_progress,r.first_pass_state,r.first_pass_note,r.scrape_record_basis,r.tcg_record_state,r.tcg_record_basis,r.pipeline_state,r.historical_pipeline_state,r.scrape_series_availability,r.tcg_series_availability,r.stage].join(" ").toLowerCase().includes(term)));
     state.page = 1; renderSources();
   }
   function renderSources() {
@@ -745,7 +769,8 @@
       <td><div class="boundary-cell"><strong>${esc(compactDate(sourceScrapeRecordDate(r)))}</strong><small>operational record</small></div></td>
       <td><div class="boundary-cell"><strong>${esc(sourceFirstPassDate(r) ? compactDate(sourceFirstPassDate(r)) : "Pending")}</strong><small>target ${esc(compactDate(r.first_pass_target || data.meta.first_pass_target_end))}</small></div></td>
       <td><div class="boundary-cell"><strong>${esc(sourceCycleDate(r) ? compactDate(sourceCycleDate(r)) : "Not yet verified")}</strong><small>continuous receipt floor</small></div></td>
-      <td>${esc(displayPipelineStage(r))}</td>
+      <td><div class="stage-cell"><strong>${esc(displayPipelineStage(r))}</strong><small>${esc(r.operational_state_source)}</small></div></td>
+      <td><div class="series-cell"><strong>Scrape · ${esc(r.scrape_series_availability)}</strong><small>TCG · ${esc(r.tcg_series_availability)}</small></div></td>
       <td class="action-cell">${pill(displayAttentionState(r.attention_state))}<p>${esc(agentQueueAction(r))}</p></td>
       <td>${esc(compactDate(r.last_checked))}</td>
     </tr>`).join("");
@@ -787,6 +812,16 @@
     return data.count_series?.[sourceCountKey(row)] || null;
   }
 
+  function sourceCountContract(row) {
+    return data.count_contracts?.[sourceCountKey(row)] || null;
+  }
+
+  function _seriesPresence(series, valueIndex) {
+    return Array.isArray(series?.points) && series.points.some(point => point[valueIndex] !== null && point[valueIndex] !== undefined)
+      ? "available"
+      : "not published";
+  }
+
   function countLabel(value) {
     return Number(value || 0).toLocaleString(undefined, {maximumFractionDigits: 0});
   }
@@ -813,8 +848,17 @@
 
   function countSeriesChart(row) {
     const series = sourceCountSeries(row);
+    const contract = sourceCountContract(row);
+    let contractMarkup = "";
+    if (contract) {
+      const pendingRows = contract.points.map(point => `<li>${esc(countMonthLabel(point[0]))}: scraped/promoted pending; TCG done pending</li>`).join("");
+      const historical = series
+        ? `The separately labeled historical chart remains visible below. Historical aggregate availability: scrape ${esc(_seriesPresence(series, 1))}; TCG ${esc(_seriesPresence(series, 2))}. Historical values are not treated as current-scope evidence.`
+        : "No historical aggregate series is published for this source.";
+      contractMarkup = `<div class="count-chart-empty current-scope-contract"><strong>Current-scope monthly series pending</strong><p>${esc(contract.scope_label)} · ${esc(compactDate(contract.range_start))} through ${esc(compactDate(contract.range_end))} · date field ${esc(contract.publication_date_field)}.</p><p>Scope hash: <code>${esc(contract.scope_hash)}</code></p><div class="pending-months">${contract.months.map(month => `<span>${esc(countMonthLabel(month))}<b>Scraped/promoted —</b><b>TCG —</b></span>`).join("")}</div><p>Every pending value is published as <code>null</code>, never inferred as zero. Scraped/promoted: ${esc(row.scrape_series_availability)}. TCG: ${esc(row.tcg_series_availability)}.</p><p>${historical}</p><p>Contract generated ${esc(niceDate(contract.generated_at_utc))}.</p><ul class="sr-only">${pendingRows}</ul></div>`;
+    }
     if (!series || !Array.isArray(series.points) || !series.points.length) {
-      return `<div class="count-chart-empty"><strong>Monthly count series pending</strong><p>Agent queue · publish the next agent-verified source-level scrape and TCG count snapshot. Source work continues autonomously while aggregate data is prepared.</p></div>`;
+      return contractMarkup || `<div class="count-chart-empty"><strong>Monthly count series pending</strong><p>Agent queue · publish the next agent-verified source-level scrape and TCG count snapshot. Source work continues autonomously while aggregate data is prepared.</p></div>`;
     }
     const points = series.points;
     const hasScrape = points.some(point => point[1] !== null && point[1] !== undefined);
@@ -846,8 +890,8 @@
       series.tcg_as_of ? `TCG snapshot ${compactDate(series.tcg_as_of)}` : "TCG snapshot pending",
     ].join(" · ");
     const basis = `Scraped basis: ${series.scrape_basis} · TCG basis: ${series.tcg_basis}`;
-    return `<div class="count-chart">
-      <div class="count-chart-head"><div><strong>Monthly source counts</strong><small>Complete months through ${esc(countMonthLabel(series.through))} · ${esc(freshness)}<br>${esc(basis)}</small></div><div class="count-legend"><span class="scraped"><i></i>Scraped${hasScrape ? "" : " · pending"}</span><span class="tcg"><i></i>TCG done${hasTcg ? "" : " · pending"}</span></div></div>
+    return `${contractMarkup}<div class="count-chart">
+      <div class="count-chart-head"><div><strong>${contract ? "Historical monthly source counts" : "Monthly source counts"}</strong><small>Complete months through ${esc(countMonthLabel(series.through))} · ${esc(freshness)}<br>${esc(basis)}</small></div><div class="count-legend"><span class="scraped"><i></i>Scraped${hasScrape ? "" : " · pending"}</span><span class="tcg"><i></i>TCG done${hasTcg ? "" : " · pending"}</span></div></div>
       <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Monthly scraped and TCG-done source counts for ${esc(row.source)}">${tickMarkup}${monthMarkup}${lineMarkup}${pointMarkup}</svg>
       <ul class="sr-only">${accessibleRows}</ul>
       <p class="count-chart-note">Scraped is the recorded source input volume. TCG done is the downstream filtered article count. A missing line means that aggregate has not yet been published for this source.</p>
@@ -867,13 +911,13 @@
       </div>
       <h4 class="detail-section-title">Processing position</h4>
       <div class="processing-track">
-        <div class="processing-step"><span>TCG recorded</span><strong>${esc(sourceTcgRecordDate(r) ? compactDate(sourceTcgRecordDate(r)) : "Not recorded")}</strong></div>
+        <div class="processing-step"><span>Historical TCG record</span><strong>${esc(r.historical_tcg_state || "Not recorded")}${r.historical_tcg_through ? ` · ${esc(compactDate(r.historical_tcg_through))}` : ""}</strong></div>
         <div class="processing-step"><span>Patchtools</span><strong>${esc(r.patchtools_status || "Not assessed")}</strong></div>
         <div class="processing-step"><span>Pre-TCG</span><strong>${esc(r.pretcg_status || "Not assessed")}</strong></div>
       </div>
       <h4 class="detail-section-title">Scraping and TCG counts</h4>
       ${countSeriesChart(r)}
-      <div class="detail-grid">${[["First-pass target",r.first_pass_target||data.meta.first_pass_target_end||"Not set"],["Current-month partial",r.current_month_partial_through||"None"],["Current stage",displayPipelineStage(r)],["Method",r.method||"Not recorded"],["Last checked",r.last_checked||"Not recorded"],["Language",r.language||"Not recorded"]].map(([k,v])=>`<div class="detail-item"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join("")}</div>
+      <div class="detail-grid">${[["First-pass target",r.first_pass_target||data.meta.first_pass_target_end||"Not set"],["Current-month partial",r.current_month_partial_through||"None"],["Current operational stage",displayPipelineStage(r)],["Historical pipeline stage",r.historical_pipeline_state||"Not recorded"],["Scrape series",r.scrape_series_availability||"Not published"],["TCG series",r.tcg_series_availability||"Not published"],["Operational state source",r.operational_state_source||"Canonical tracker"],["Method",r.method||"Not recorded"],["Last checked",r.last_checked||"Not recorded"],["Language",r.language||"Not recorded"]].map(([k,v])=>`<div class="detail-item"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join("")}</div>
       <div class="detail-copy"><section><h4>First-pass note</h4><p>${esc(displayNarrative(r.first_pass_note||"First-pass inspection pending"))}</p></section><section><h4>Progress</h4><p>${esc(displayNarrative(r.scraping_progress||"No progress note"))}</p></section><section><h4>Problem summary</h4><p>${esc(displayNarrative(r.problem_summary||"No problem recorded"))}</p></section><section><h4>Agent queue / next action</h4><p>${esc(agentQueueAction(r))}</p></section></div>`;
     drawer.classList.add("open");
     drawer.setAttribute("aria-hidden", "false");
@@ -901,7 +945,7 @@
     return row[key];
   }
   function exportCsv() {
-    const keys=["country","source","project","recorded_notion_boundary","first_pass_target","first_pass_verified_through","current_month_partial_through","first_pass_state","first_pass_note","baseline_status","scrape_record_through","scrape_record_state","scrape_record_basis","boundary_check","scrape_verified_through","tcg_record_through","tcg_record_state","tcg_record_basis","stage","last_checked","method","pipeline_state","attention_state","needs_revisit","patchtools_status","pretcg_status","downstream_ready","problem_summary","next_action"];
+    const keys=["country","source","project","recorded_notion_boundary","first_pass_target","first_pass_verified_through","current_month_partial_through","first_pass_state","first_pass_note","baseline_status","scrape_record_through","scrape_record_state","scrape_record_basis","boundary_check","scrape_verified_through","tcg_record_through","tcg_record_state","tcg_record_basis","historical_tcg_through","historical_tcg_state","historical_pipeline_state","stage","last_checked","method","pipeline_state","operational_state_source","scrape_series_availability","tcg_series_availability","attention_state","needs_revisit","patchtools_status","pretcg_status","downstream_ready","problem_summary","next_action"];
     const csv=[keys.join(","),...state.filtered.map(r=>keys.map(k=>csvEscape(csvExportValue(r,k))).join(","))].join("\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); const a=document.createElement("a"); a.href=url;a.download="source_tracker_filtered.csv";a.click();URL.revokeObjectURL(url);
   }
@@ -937,5 +981,5 @@
     $$("#country-table th").forEach(th=>th.addEventListener("click",()=>{const k=th.dataset.sort;state.countrySort=[k,state.countrySort[0]===k?-state.countrySort[1]:1];renderCountries();}));
   }
 
-  prepareSourceDirectory();renderHeader();renderDonut();renderPipeline();renderOverviewLists();renderWorldMap();renderSharedSources();renderCountries();renderSources();renderAttention();renderCycle();bind();
+  prepareSourceDirectory();renderHeader();renderOperationsStatus();renderDonut();renderPipeline();renderOverviewLists();renderWorldMap();renderSharedSources();renderCountries();renderSources();renderAttention();renderCycle();bind();
 })();

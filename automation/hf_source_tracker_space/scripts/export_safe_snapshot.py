@@ -20,9 +20,10 @@ from pathlib import Path
 from typing import Any
 
 
-SNAPSHOT_VERSION = 4
+SNAPSHOT_VERSION = 5
 DEFAULT_SOURCE = Path(__file__).resolve().parents[2] / "source_tracker" / "master_source_tracker_rows.json"
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / "data" / "tracker_snapshot.json"
+DEFAULT_PUBLIC_OPERATIONS = Path(__file__).resolve().parents[1] / "operations_status.public.json"
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 PRIVATE_COUNT_ROOTS = Path(__file__).with_name("count_roots.private.json")
 
@@ -59,6 +60,60 @@ COUNT_SERIES_KEYS = {
     "points",
 }
 
+PUBLIC_OPERATIONS_KEYS = {
+    "schema_version",
+    "generated_at_utc",
+    "latest_window",
+    "sources",
+}
+PUBLIC_LATEST_WINDOW_KEYS = {
+    "scheduled_local",
+    "evidence_through_utc",
+    "timezone",
+    "state",
+    "summary",
+    "consecutive_blocked_windows",
+    "work_started",
+}
+PUBLIC_SOURCE_OPERATION_KEYS = {
+    "current_stage",
+    "attention_state",
+    "next_action",
+    "count_contract",
+}
+PUBLIC_COUNT_CONTRACT_KEYS = {
+    "generated_at_utc",
+    "publication_date_field",
+    "range_start",
+    "range_end",
+    "months",
+    "scope_label",
+    "scope_hash",
+    "scrape_series_status",
+    "tcg_series_status",
+    "points",
+}
+PUBLIC_OPERATION_STATES = {
+    "capacity_blocked_no_launch",
+    "prepared_waiting_capacity",
+    "running_unattended",
+    "terminal_review_pending",
+    "terminal_reconciled",
+}
+PUBLIC_ATTENTION_STATES = {"Active", "Blocked", "On track", "Ready", "Review"}
+PUBLIC_SERIES_STATUSES = {
+    "pending_promotion_terminal_receipt",
+    "pending_tcg_receipt",
+    "available",
+    "not_published",
+}
+PUBLIC_SERIES_LABELS = {
+    "pending_promotion_terminal_receipt": "Pending guarded promotion terminal receipt",
+    "pending_tcg_receipt": "Pending current-scope TCG receipt",
+    "available": "Available",
+    "not_published": "Not published",
+}
+
 ALLOWED_ROW_KEYS = {
     "country",
     "source",
@@ -93,6 +148,12 @@ ALLOWED_ROW_KEYS = {
     "current_evidence_addressed",
     "pipeline_state",
     "attention_state",
+    "operational_state_source",
+    "historical_pipeline_state",
+    "historical_tcg_state",
+    "historical_tcg_through",
+    "scrape_series_availability",
+    "tcg_series_availability",
     "recorded_notion_boundary",
     "first_pass_target",
     "first_pass_verified_through",
@@ -259,6 +320,135 @@ def clean_text(value: Any, *, limit: int = 420) -> str:
 
 def clean_scalar(value: Any, *, limit: int = 100) -> str:
     return clean_text(value, limit=limit)
+
+
+def _require_public_text(value: Any, *, field: str, limit: int) -> str:
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise ValueError(f"{field} must be a non-empty trimmed string")
+    if len(value) > limit or "\n" in value or "\r" in value or "\t" in value:
+        raise ValueError(f"{field} is too long or is not single-line")
+    for pattern in FORBIDDEN_OUTPUT_PATTERNS:
+        if pattern.search(value):
+            raise ValueError(f"{field} contains private or unsafe content")
+    return value
+
+
+def _complete_months(range_start: str, range_end: str) -> list[str]:
+    start = iso_date(range_start)
+    end = iso_date(range_end)
+    if start is None or end is None or start > end:
+        raise ValueError("Count-contract range must contain valid ordered ISO dates")
+    cursor = date(start.year, start.month, 1)
+    final = date(end.year, end.month, 1)
+    months: list[str] = []
+    while cursor <= final:
+        months.append(cursor.strftime("%Y-%m"))
+        cursor = date(
+            cursor.year + int(cursor.month == 12),
+            1 if cursor.month == 12 else cursor.month + 1,
+            1,
+        )
+    return months
+
+
+def validate_public_operations(payload: dict[str, Any]) -> None:
+    """Validate the hand-authored, publishable operations overlay.
+
+    This input is deliberately small and source-level.  It must never be built by
+    scraping a private runtime tree, and it cannot carry identities, paths, URLs,
+    receipt hashes, or infrastructure details.
+    """
+
+    if not isinstance(payload, dict) or set(payload) != PUBLIC_OPERATIONS_KEYS:
+        raise ValueError("Public operations input has an invalid top-level schema")
+    if payload["schema_version"] != 1:
+        raise ValueError("Unsupported public operations schema version")
+    generated = payload["generated_at_utc"]
+    if not isinstance(generated, str) or not re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", generated
+    ):
+        raise ValueError("Public operations generated_at_utc must be UTC ISO time")
+    latest = payload["latest_window"]
+    if not isinstance(latest, dict) or set(latest) != PUBLIC_LATEST_WINDOW_KEYS:
+        raise ValueError("Public operations latest_window has an invalid schema")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2} (?:06|14|22):15", str(latest["scheduled_local"])):
+        raise ValueError("latest_window.scheduled_local is invalid")
+    if latest["timezone"] != "America/New_York":
+        raise ValueError("latest_window.timezone is invalid")
+    evidence_through = latest["evidence_through_utc"]
+    if not isinstance(evidence_through, str) or not re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", evidence_through
+    ):
+        raise ValueError("latest_window.evidence_through_utc is invalid")
+    if generated < evidence_through:
+        raise ValueError("Public operations generation time predates its evidence")
+    if latest["state"] not in PUBLIC_OPERATION_STATES:
+        raise ValueError("latest_window.state is invalid")
+    _require_public_text(latest["summary"], field="latest_window.summary", limit=240)
+    if (
+        not isinstance(latest["consecutive_blocked_windows"], int)
+        or isinstance(latest["consecutive_blocked_windows"], bool)
+        or latest["consecutive_blocked_windows"] < 0
+    ):
+        raise ValueError("latest_window.consecutive_blocked_windows is invalid")
+    if not isinstance(latest["work_started"], bool):
+        raise ValueError("latest_window.work_started must be boolean")
+
+    sources = payload["sources"]
+    if not isinstance(sources, dict) or not sources:
+        raise ValueError("Public operations input must contain source overrides")
+    for source_key, operation in sources.items():
+        if not re.fullmatch(r"(?:MLP|MLEED)\|[a-z0-9._-]+", str(source_key)):
+            raise ValueError(f"Unsafe public operations source key: {source_key!r}")
+        if not isinstance(operation, dict) or set(operation) != PUBLIC_SOURCE_OPERATION_KEYS:
+            raise ValueError(f"Public operation {source_key!r} has an invalid schema")
+        _require_public_text(
+            operation["current_stage"], field=f"{source_key}.current_stage", limit=100
+        )
+        if operation["attention_state"] not in PUBLIC_ATTENTION_STATES:
+            raise ValueError(f"Public operation {source_key!r} has invalid attention state")
+        _require_public_text(
+            operation["next_action"], field=f"{source_key}.next_action", limit=240
+        )
+        contract = operation["count_contract"]
+        if contract is None:
+            continue
+        if not isinstance(contract, dict) or set(contract) != PUBLIC_COUNT_CONTRACT_KEYS:
+            raise ValueError(f"Count contract {source_key!r} has an invalid schema")
+        if contract["publication_date_field"] != "date_publish":
+            raise ValueError(f"Count contract {source_key!r} has an invalid date field")
+        if contract["generated_at_utc"] != generated:
+            raise ValueError(
+                f"Count contract {source_key!r} generation time does not match the overlay"
+            )
+        months = _complete_months(contract["range_start"], contract["range_end"])
+        if contract["months"] != months:
+            raise ValueError(f"Count contract {source_key!r} months do not match its range")
+        _require_public_text(
+            contract["scope_label"], field=f"{source_key}.scope_label", limit=100
+        )
+        if not re.fullmatch(r"sha256-base64url:[A-Za-z0-9_-]{43}", contract["scope_hash"]):
+            raise ValueError(f"Count contract {source_key!r} has an invalid scope hash")
+        for status_key in ("scrape_series_status", "tcg_series_status"):
+            if contract[status_key] not in PUBLIC_SERIES_STATUSES:
+                raise ValueError(f"Count contract {source_key!r} has invalid {status_key}")
+        points = contract["points"]
+        expected_points = [[month, None, None] for month in months]
+        if points != expected_points:
+            raise ValueError(
+                f"Count contract {source_key!r} pending points must be explicit nulls"
+            )
+
+    raw = json.dumps(payload, ensure_ascii=False)
+    for pattern in FORBIDDEN_OUTPUT_PATTERNS:
+        if pattern.search(raw):
+            raise ValueError("Public operations input contains private or unsafe content")
+
+
+def load_public_operations(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    validate_public_operations(payload)
+    return payload
 
 
 def normalize_method(value: Any) -> str:
@@ -1123,6 +1313,78 @@ def build_country_rows(source_rows: list[dict[str, Any]]) -> list[dict[str, Any]
     return countries
 
 
+def _published_series_state(
+    count_series: dict[str, dict[str, Any]], source_key: str, value_index: int
+) -> str:
+    series = count_series.get(source_key)
+    if not series:
+        return "Not published"
+    return (
+        "Available"
+        if any(point[value_index] is not None for point in series.get("points", []))
+        else "Not published"
+    )
+
+
+def apply_public_operations(
+    rows: list[dict[str, Any]],
+    count_series: dict[str, dict[str, Any]],
+    operations: dict[str, Any] | None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Apply a sanitized scheduled-state overlay without touching verified dates."""
+
+    operations = operations or {
+        "schema_version": 1,
+        "generated_at_utc": "",
+        "latest_window": None,
+        "sources": {},
+    }
+    source_overrides = operations.get("sources", {})
+    rows_by_key: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        key = count_series_key(row.get("project"), row.get("source"))
+        if key in rows_by_key:
+            raise ValueError(f"Duplicate exported source key: {key!r}")
+        rows_by_key[key] = row
+        row["historical_pipeline_state"] = row["pipeline_state"]
+        row["historical_tcg_state"] = row["tcg_record_state"]
+        row["historical_tcg_through"] = row["tcg_record_through"]
+        row["operational_state_source"] = "Canonical tracker"
+        row["scrape_series_availability"] = _published_series_state(
+            count_series, key, 1
+        )
+        row["tcg_series_availability"] = _published_series_state(count_series, key, 2)
+
+    unknown = sorted(set(source_overrides) - set(rows_by_key))
+    if unknown:
+        raise ValueError(f"Public operations references unknown sources: {unknown}")
+
+    count_contracts: dict[str, dict[str, Any]] = {}
+    for key, operation in source_overrides.items():
+        row = rows_by_key[key]
+        row["pipeline_state"] = operation["current_stage"]
+        row["attention_state"] = operation["attention_state"]
+        row["next_action"] = operation["next_action"]
+        row["operational_state_source"] = "Latest scheduled operations"
+        contract = operation["count_contract"]
+        if contract is not None:
+            count_contracts[key] = contract
+            row["scrape_series_availability"] = PUBLIC_SERIES_LABELS[
+                contract["scrape_series_status"]
+            ]
+            row["tcg_series_availability"] = PUBLIC_SERIES_LABELS[
+                contract["tcg_series_status"]
+            ]
+
+    operation_summary = {
+        "schema_version": operations.get("schema_version", 1),
+        "generated_at_utc": operations.get("generated_at_utc", ""),
+        "latest_window": operations.get("latest_window"),
+        "source_override_count": len(source_overrides),
+    }
+    return count_contracts, operation_summary
+
+
 def validate_export(snapshot: dict[str, Any]) -> None:
     rows = snapshot.get("sources")
     if not isinstance(rows, list) or not rows:
@@ -1163,6 +1425,71 @@ def validate_export(snapshot: dict[str, Any]) -> None:
                 raise ValueError(
                     f"Row {index} has a current-month date without matching receipt coverage"
                 )
+        if row["historical_tcg_state"] != row["tcg_record_state"]:
+            raise ValueError(f"Row {index} does not preserve its historical TCG state")
+        if row["historical_tcg_through"] != row["tcg_record_through"]:
+            raise ValueError(f"Row {index} does not preserve its historical TCG boundary")
+        if row["operational_state_source"] not in {
+            "Canonical tracker",
+            "Latest scheduled operations",
+        }:
+            raise ValueError(f"Row {index} has an invalid operational state source")
+        for availability_key in (
+            "scrape_series_availability",
+            "tcg_series_availability",
+        ):
+            if not row[availability_key]:
+                raise ValueError(f"Row {index} has no {availability_key}")
+
+    operations = snapshot.get("operations")
+    if not isinstance(operations, dict) or set(operations) != {
+        "schema_version",
+        "generated_at_utc",
+        "latest_window",
+        "source_override_count",
+    }:
+        raise ValueError("Snapshot operations summary has an invalid schema")
+    if operations["schema_version"] != 1:
+        raise ValueError("Snapshot operations summary has an invalid version")
+    if operations["latest_window"] is not None:
+        latest = operations["latest_window"]
+        if not isinstance(latest, dict) or set(latest) != PUBLIC_LATEST_WINDOW_KEYS:
+            raise ValueError("Snapshot operations latest_window has an invalid schema")
+        if latest["state"] not in PUBLIC_OPERATION_STATES:
+            raise ValueError("Snapshot operations latest_window has an invalid state")
+    if not isinstance(operations["source_override_count"], int):
+        raise ValueError("Snapshot operations source_override_count is invalid")
+    if operations["source_override_count"] != sum(
+        row["operational_state_source"] == "Latest scheduled operations" for row in rows
+    ):
+        raise ValueError("Snapshot operations source override count does not match rows")
+
+    count_contracts = snapshot.get("count_contracts")
+    if not isinstance(count_contracts, dict):
+        raise ValueError("count_contracts must be an object")
+    source_keys = {
+        count_series_key(row.get("project"), row.get("source")) for row in rows
+    }
+    for key, contract in count_contracts.items():
+        if key not in source_keys:
+            raise ValueError(f"Count contract references unknown source {key!r}")
+        if not isinstance(contract, dict) or set(contract) != PUBLIC_COUNT_CONTRACT_KEYS:
+            raise ValueError(f"Count contract {key!r} has an invalid schema")
+        months = _complete_months(contract["range_start"], contract["range_end"])
+        if contract["publication_date_field"] != "date_publish":
+            raise ValueError(f"Count contract {key!r} has an invalid date field")
+        if not re.fullmatch(r"sha256-base64url:[A-Za-z0-9_-]{43}", contract["scope_hash"]):
+            raise ValueError(f"Count contract {key!r} has an invalid scope hash")
+        if contract["generated_at_utc"] != operations["generated_at_utc"]:
+            raise ValueError(f"Count contract {key!r} has an invalid generation time")
+        if contract["months"] != months:
+            raise ValueError(f"Count contract {key!r} has inconsistent months")
+        if contract["points"] != [[month, None, None] for month in months]:
+            raise ValueError(f"Count contract {key!r} must preserve pending null values")
+        for status_key in ("scrape_series_status", "tcg_series_status"):
+            if contract[status_key] not in PUBLIC_SERIES_STATUSES:
+                raise ValueError(f"Count contract {key!r} has invalid {status_key}")
+
     count_series = snapshot.get("count_series", {})
     if not isinstance(count_series, dict):
         raise ValueError("count_series must be an object")
@@ -1229,6 +1556,10 @@ def validate_export(snapshot: dict[str, Any]) -> None:
         raise ValueError("meta.scrape_count_series_source_count does not match count_series")
     if meta.get("tcg_count_series_source_count", 0) != tcg_series:
         raise ValueError("meta.tcg_count_series_source_count does not match count_series")
+    if meta.get("current_scope_count_contract_count", 0) != len(count_contracts):
+        raise ValueError(
+            "meta.current_scope_count_contract_count does not match count_contracts"
+        )
     country_groups = snapshot.get("countries", [])
     if meta.get("country_group_count") != len(country_groups):
         raise ValueError("meta.country_group_count does not match exported country rows")
@@ -1263,7 +1594,10 @@ def build_snapshot(
     payload: dict[str, Any],
     *,
     count_series: dict[str, dict[str, Any]] | None = None,
+    operations: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if operations is not None:
+        validate_public_operations(operations)
     raw_rows = payload.get("rows")
     if not isinstance(raw_rows, list):
         raise ValueError("Input does not contain a rows list")
@@ -1282,6 +1616,10 @@ def build_snapshot(
         ),
         key=lambda row: (row["country"], row["source"]),
     )
+    public_count_series = count_series or {}
+    count_contracts, operation_summary = apply_public_operations(
+        rows, public_count_series, operations
+    )
     countries = build_country_rows(rows)
     status_counts = Counter(row["baseline_status"] for row in rows)
     pipeline_counts = Counter(row["pipeline_state"] for row in rows)
@@ -1289,7 +1627,6 @@ def build_snapshot(
     project_counts = Counter(row["project"] for row in rows)
     method_counts = Counter(row["method"] for row in rows)
     first_pass_counts = Counter(row["first_pass_state"] for row in rows)
-    public_count_series = count_series or {}
     scrape_series_count = sum(
         any(point[1] is not None for point in series["points"])
         for series in public_count_series.values()
@@ -1319,6 +1656,7 @@ def build_snapshot(
             "count_series_source_count": len(public_count_series),
             "scrape_count_series_source_count": scrape_series_count,
             "tcg_count_series_source_count": tcg_series_count,
+            "current_scope_count_contract_count": len(count_contracts),
         },
         "summary": {
             "baseline_status": dict(sorted(status_counts.items())),
@@ -1331,6 +1669,8 @@ def build_snapshot(
         "countries": countries,
         "sources": rows,
         "count_series": public_count_series,
+        "count_contracts": count_contracts,
+        "operations": operation_summary,
         "waves": [
             {
                 "wave": int(item.get("Wave", 0)),
@@ -1358,6 +1698,9 @@ def main() -> int:
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--js-output", type=Path, default=None)
+    parser.add_argument(
+        "--public-operations", type=Path, default=DEFAULT_PUBLIC_OPERATIONS
+    )
     parser.add_argument("--civic-count-root", type=Path, default=DEFAULT_CIVIC_COUNT_ROOT)
     parser.add_argument("--env-count-root", type=Path, default=DEFAULT_ENV_COUNT_ROOT)
     parser.add_argument(
@@ -1378,7 +1721,10 @@ def main() -> int:
         scrape_metrics_root=args.scrape_metrics_root,
         months=args.count_series_months,
     )
-    snapshot = build_snapshot(payload, count_series=count_series)
+    operations = load_public_operations(args.public_operations)
+    snapshot = build_snapshot(
+        payload, count_series=count_series, operations=operations
+    )
     pretty = json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=False) + "\n"
     compact = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":"))
     json_changed = write_if_changed(args.output, pretty)

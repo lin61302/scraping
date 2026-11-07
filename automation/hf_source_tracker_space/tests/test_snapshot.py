@@ -12,10 +12,13 @@ from export_safe_snapshot import (
     FORBIDDEN_OUTPUT_PATTERNS,
     REQUIRED_COUNTRY_KEYS,
     REQUIRED_ROW_KEYS,
+    apply_public_operations,
     build_country_rows,
     build_source_count_series,
     export_row,
+    load_public_operations,
     pipeline_state,
+    validate_public_operations,
     validate_export,
 )
 
@@ -441,5 +444,112 @@ class SnapshotTests(unittest.TestCase):
             "Legacy record stage": "scraped",
         }
         self.assertEqual(pipeline_state(pending), "Patchtools / promotion")
+
+    def test_public_operations_overlay_has_current_stage_precedence(self):
+        operations=load_public_operations(ROOT/"operations_status.public.json")
+        validate_public_operations(operations)
+        rows=[]
+        for source_key in operations["sources"]:
+            project,source=source_key.split("|",1)
+            rows.append({
+                "project":project,
+                "source":source,
+                "pipeline_state":"Recorded TCG/count complete",
+                "attention_state":"On track",
+                "next_action":"Historical action",
+                "tcg_record_state":"Recorded complete",
+                "tcg_record_through":"2026-08-31",
+            })
+        contracts,summary=apply_public_operations(rows,{},operations)
+        by_source={row["source"]:row for row in rows}
+
+        for source in ("newsroompanama.com","eyeradio.org","eagle.co.ug"):
+            with self.subTest(source=source):
+                row=by_source[source]
+                self.assertEqual(row["pipeline_state"],"Capacity remediation and exact repair refresh in progress")
+                self.assertEqual(row["historical_pipeline_state"],"Recorded TCG/count complete")
+                self.assertEqual(row["historical_tcg_state"],"Recorded complete")
+                self.assertEqual(row["scrape_series_availability"],"Pending guarded promotion terminal receipt")
+                self.assertEqual(row["tcg_series_availability"],"Pending current-scope TCG receipt")
+
+        self.assertEqual(by_source["sibconline.com.sb"]["pipeline_state"],"Blocked — exact identity ledger unavailable")
+        for source in ("7sur7.cd","liberianinvestigator.com","247malawi.com","eluniverso.com","elcomercio.pe"):
+            self.assertEqual(by_source[source]["pipeline_state"],"Parked — exact residual ledger unavailable")
+        self.assertEqual(by_source["csmonitor.com"]["pipeline_state"],"First-pass complete; production promotion pending")
+        self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
+        self.assertEqual(summary["source_override_count"],10)
+        self.assertEqual(set(contracts),{
+            "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug"
+        })
+
+    def test_current_scope_contracts_use_explicit_null_not_zero(self):
+        operations=load_public_operations(ROOT/"operations_status.public.json")
+        contracts=[
+            operation["count_contract"]
+            for operation in operations["sources"].values()
+            if operation["count_contract"] is not None
+        ]
+        self.assertEqual(len(contracts),3)
+        for contract in contracts:
+            with self.subTest(scope=contract["scope_label"], start=contract["range_start"]):
+                self.assertEqual(contract["publication_date_field"],"date_publish")
+                self.assertRegex(contract["scope_hash"],r"^sha256-base64url:[A-Za-z0-9_-]{43}$")
+                self.assertEqual([point[0] for point in contract["points"]],contract["months"])
+                self.assertTrue(all(point[1:] == [None,None] for point in contract["points"]))
+                self.assertEqual(contract["scrape_series_status"],"pending_promotion_terminal_receipt")
+                self.assertEqual(contract["tcg_series_status"],"pending_tcg_receipt")
+
+    def test_ui_separates_operational_and_historical_state(self):
+        html=(ROOT/"index.html").read_text(encoding="utf-8")
+        app=(ROOT/"app.js").read_text(encoding="utf-8")
+        self.assertIn('id="operations-status"',html)
+        self.assertIn("Latest scheduled operation",app)
+        self.assertIn("Historical pipeline stage",app)
+        self.assertIn("Historical TCG record",app)
+        self.assertIn("scrape_series_availability",app)
+        self.assertIn("tcg_series_availability",app)
+        self.assertIn("Every pending value is published as <code>null</code>",app)
+
+    def test_release_exposes_latest_operations_without_advancing_verified_dates(self):
+        self.assertEqual(self.data["meta"]["snapshot_version"],5)
+        self.assertEqual(self.data["operations"]["latest_window"]["state"],"capacity_blocked_no_launch")
+        self.assertFalse(self.data["operations"]["latest_window"]["work_started"])
+        self.assertGreaterEqual(
+            self.data["operations"]["generated_at_utc"],
+            self.data["operations"]["latest_window"]["evidence_through_utc"],
+        )
+        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],3)
+        by_source={row["source"]:row for row in self.data["sources"]}
+        expected={
+            "newsroompanama.com":"Capacity remediation and exact repair refresh in progress",
+            "eyeradio.org":"Capacity remediation and exact repair refresh in progress",
+            "eagle.co.ug":"Capacity remediation and exact repair refresh in progress",
+            "sibconline.com.sb":"Blocked — exact identity ledger unavailable",
+            "7sur7.cd":"Parked — exact residual ledger unavailable",
+            "liberianinvestigator.com":"Parked — exact residual ledger unavailable",
+            "247malawi.com":"Parked — exact residual ledger unavailable",
+            "eluniverso.com":"Parked — exact residual ledger unavailable",
+            "elcomercio.pe":"Parked — exact residual ledger unavailable",
+            "csmonitor.com":"First-pass complete; production promotion pending",
+        }
+        for source,current_stage in expected.items():
+            with self.subTest(source=source):
+                row=by_source[source]
+                self.assertEqual(row["pipeline_state"],current_stage)
+                self.assertEqual(row["operational_state_source"],"Latest scheduled operations")
+                self.assertEqual(row["historical_tcg_state"],row["tcg_record_state"])
+                self.assertEqual(row["historical_tcg_through"],row["tcg_record_through"])
+
+    def test_mobile_source_table_keeps_current_stage_and_count_series_visible(self):
+        app=(ROOT/"app.js").read_text(encoding="utf-8")
+        mobile=next(line for line in app.splitlines() if "@media(max-width:720px)" in line)
+        self.assertNotIn("nth-child(7)",mobile)
+        self.assertNotIn("nth-child(8)",mobile)
+
+    def test_current_scope_contract_does_not_hide_historical_plot(self):
+        app=(ROOT/"app.js").read_text(encoding="utf-8")
+        self.assertIn('let contractMarkup = ""',app)
+        self.assertIn('Historical monthly source counts',app)
+        self.assertIn('return `${contractMarkup}<div class="count-chart">',app)
 
 if __name__=="__main__": unittest.main()

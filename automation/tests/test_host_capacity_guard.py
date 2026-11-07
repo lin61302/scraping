@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import json
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -15,6 +16,8 @@ from ops.host_capacity_guard import (  # noqa: E402
     GIB,
     HostMetrics,
     Thresholds,
+    _parse_macos_cpu_idle,
+    _read_macos_cpu_idle,
     evaluate_capacity,
     parser,
     thresholds_from_args,
@@ -39,6 +42,8 @@ def healthy(**overrides: object) -> HostMetrics:
         "max_log_bytes": 100 * 1024**2,
         "configured_roots_total_bytes": 2 * GIB,
         "fd_soft_limit": 8192,
+        "platform": "linux",
+        "cpu_idle_percent": None,
         "configured_log_roots": 1,
         "configured_output_roots": 1,
         "inspected_roots": 2,
@@ -148,6 +153,164 @@ class HostCapacityGuardTests(unittest.TestCase):
         severities = {row["severity"] for row in report["reasons"]}  # type: ignore[index]
         self.assertEqual(severities, {"reduced", "blocked"})
 
+    def test_darwin_high_load_with_independent_cpu_headroom_is_reduced(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=45.0,
+            scrape_processes=0,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "reduced")
+        self.assertTrue(report["launch_allowed"])
+        self.assertEqual(report["recommended_limits"], {"network_workers": 2, "browser_workers": 0})
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("darwin_high_load_reduced_with_cpu_headroom", codes)
+        self.assertNotIn("load_per_cpu_blocked", codes)
+        self.assertEqual(report["metrics"]["cpu_idle_percent"], 45.0)  # type: ignore[index]
+        self.assertEqual(report["metrics"]["cpu_busy_percent"], 55.0)  # type: ignore[index]
+
+    def test_darwin_high_load_with_low_cpu_idle_blocks(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=15.0,
+            scrape_processes=0,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "blocked")
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("load_per_cpu_blocked", codes)
+        self.assertIn("darwin_cpu_idle_percent_blocked", codes)
+
+    def test_darwin_high_load_without_cpu_idle_sample_blocks(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=None,
+            scrape_processes=0,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "blocked")
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("darwin_cpu_idle_unavailable", codes)
+
+    def test_darwin_high_load_requires_quiescent_campaign_processes(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=60.0,
+            scrape_processes=1,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "blocked")
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("load_per_cpu_blocked", codes)
+
+    def test_darwin_high_load_requires_healthy_current_memory(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=60.0,
+            memory_available_bytes=15 * GIB,
+            scrape_processes=0,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "blocked")
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("load_per_cpu_blocked", codes)
+
+    def test_darwin_high_load_below_hard_disk_floor_blocks(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            filesystem_free_bytes=29 * GIB,
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=60.0,
+            scrape_processes=0,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "blocked")
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("filesystem_free_bytes_blocked", codes)
+        self.assertIn("load_per_cpu_blocked", codes)
+
+    def test_darwin_high_load_in_reduced_disk_band_stays_reduced(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            filesystem_free_bytes=50 * GIB,
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=60.0,
+            scrape_processes=0,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "reduced")
+        self.assertTrue(report["launch_allowed"])
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("filesystem_free_bytes_reduced", codes)
+        self.assertIn("darwin_high_load_reduced_with_cpu_headroom", codes)
+
+    def test_darwin_high_load_with_invalid_cpu_idle_blocks(self):
+        for value in (float("nan"), 101.0):
+            with self.subTest(value=value):
+                report = evaluate_capacity(healthy(
+                    platform="darwin",
+                    load5=80.0,
+                    cpu_count=16,
+                    cpu_idle_percent=value,
+                    scrape_processes=0,
+                    browser_processes=0,
+                ), generated_at=NOW)
+                self.assertEqual(report["status"], "blocked")
+                codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+                self.assertIn("darwin_cpu_idle_invalid", codes)
+
+    def test_normal_darwin_load_does_not_require_cpu_idle_sample(self):
+        report = evaluate_capacity(healthy(
+            platform="darwin",
+            cpu_idle_percent=None,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "green")
+        self.assertTrue(report["launch_allowed"])
+
+    def test_linux_high_load_still_blocks_even_with_cpu_idle_value(self):
+        report = evaluate_capacity(healthy(
+            platform="linux",
+            load5=80.0,
+            cpu_count=16,
+            cpu_idle_percent=60.0,
+            scrape_processes=0,
+            browser_processes=0,
+        ), generated_at=NOW)
+        self.assertEqual(report["status"], "blocked")
+        codes = {row["code"] for row in report["reasons"]}  # type: ignore[index]
+        self.assertIn("load_per_cpu_blocked", codes)
+
+    def test_macos_cpu_idle_parser_uses_final_top_sample(self):
+        text = """
+CPU usage: 40.0% user, 20.0% sys, 40.0% idle
+CPU usage: 16.77% user, 19.34% sys, 63.88% idle
+"""
+        self.assertEqual(_parse_macos_cpu_idle(text), 63.88)
+
+    def test_macos_cpu_idle_parser_fails_closed_on_missing_or_invalid_value(self):
+        with self.assertRaises(RuntimeError):
+            _parse_macos_cpu_idle("no cpu summary")
+        with self.assertRaises(RuntimeError):
+            _parse_macos_cpu_idle("CPU usage: 0% user, 0% sys, 101% idle")
+
+    def test_macos_cpu_idle_reader_uses_two_bounded_top_samples(self):
+        top_output = "CPU usage: 10% user, 10% sys, 80% idle\n"
+        with patch("ops.host_capacity_guard._run_readonly", return_value=top_output) as run:
+            self.assertEqual(_read_macos_cpu_idle(), 80.0)
+        run.assert_called_once_with(("/usr/bin/top", "-l", "2", "-n", "0", "-s", "1"))
+
     def test_missing_metrics_and_collection_errors_fail_closed(self):
         report = evaluate_capacity(healthy(
             memory_available_bytes=None,
@@ -171,6 +334,7 @@ class HostCapacityGuardTests(unittest.TestCase):
             "--filesystem-reduce-gib", "40",
             "--memory-block-gib", "4",
             "--memory-reduce-gib", "12",
+            "--darwin-high-load-cpu-idle-safe-percent", "35",
             "--green-network-workers", "3",
             "--green-browser-workers", "0",
             "--reduced-network-workers", "1",
@@ -180,6 +344,7 @@ class HostCapacityGuardTests(unittest.TestCase):
         self.assertEqual(limits.filesystem_reduce_bytes, 40 * GIB)
         self.assertEqual(limits.memory_block_bytes, 4 * GIB)
         self.assertEqual(limits.memory_reduce_bytes, 12 * GIB)
+        self.assertEqual(limits.darwin_high_load_cpu_idle_safe_percent, 35.0)
         report = evaluate_capacity(healthy(), limits, generated_at=NOW)
         self.assertEqual(report["recommended_limits"], {"network_workers": 3, "browser_workers": 0})
 
@@ -194,6 +359,14 @@ class HostCapacityGuardTests(unittest.TestCase):
                 filesystem_block_bytes=70 * GIB,
                 filesystem_reduce_bytes=60 * GIB,
             ).validate()
+
+    def test_threshold_validation_rejects_invalid_darwin_idle_percentage(self):
+        for value in (-0.1, 100.1):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    Thresholds(
+                        darwin_high_load_cpu_idle_safe_percent=value,
+                    ).validate()
 
 
 if __name__ == "__main__":

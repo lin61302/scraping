@@ -12,6 +12,9 @@ three bounded worker configurations:
 Paths, process command lines, user names, and host names are omitted from the
 default report.  Operators may explicitly request configured paths with
 ``--include-paths``.  Exit codes are 0 (green), 10 (reduced), and 20 (blocked).
+On macOS, a high load average may be downgraded only to the reduced network-only
+profile when a separate bounded CPU-idle sample and every supporting hard gate
+prove sufficient headroom; missing corroboration fails closed.
 """
 
 from __future__ import annotations
@@ -68,6 +71,7 @@ class Thresholds:
     memory_reduce_percent: float = 20.0
     load_reduce_per_cpu: float = 0.8
     load_block_per_cpu: float = 1.5
+    darwin_high_load_cpu_idle_safe_percent: float = 30.0
     swap_reduce_percent: float = 50.0
     swap_block_percent: float = 75.0
     processes_reduce_above: int = 6
@@ -111,6 +115,7 @@ class Thresholds:
             self.memory_reduce_percent,
             self.swap_reduce_percent,
             self.swap_block_percent,
+            self.darwin_high_load_cpu_idle_safe_percent,
         )
         if any(value < 0 or value > 100 for value in percentages):
             raise ValueError("percentage thresholds must be between 0 and 100")
@@ -145,6 +150,8 @@ class HostMetrics:
     max_log_bytes: int | None
     configured_roots_total_bytes: int | None
     fd_soft_limit: int | None
+    platform: str | None = None
+    cpu_idle_percent: float | None = None
     configured_log_roots: int = 0
     configured_output_roots: int = 0
     inspected_roots: int = 0
@@ -264,10 +271,67 @@ def evaluate_capacity(metrics: HostMetrics, thresholds: Thresholds | None = None
         else:
             load_per_cpu = metrics.load5 / metrics.cpu_count
             if load_per_cpu >= limits.load_block_per_cpu:
-                reasons.append(_reason(
-                    "load_per_cpu_blocked", "blocked", round(load_per_cpu, 3),
-                    limits.load_block_per_cpu, "Normalized five-minute load reached the blocked threshold.",
-                ))
+                # Darwin load averages can remain extremely high while the
+                # machine still has substantial CPU headroom because runnable,
+                # storage-bound, and lock-bound threads all contribute to the
+                # number.  Keep the Linux/other-platform behavior unchanged,
+                # but on macOS permit only the already-bounded reduced profile
+                # when an independent CPU-idle sample and all supporting hard
+                # gates prove that a network-only run is safe.
+                if metrics.platform == "darwin":
+                    fs_above_hard = (
+                        metrics.filesystem_total_bytes is not None
+                        and metrics.filesystem_free_bytes is not None
+                        and metrics.filesystem_total_bytes > 0
+                        and metrics.filesystem_free_bytes >= limits.filesystem_block_bytes
+                        and fs_free_percent is not None
+                        and fs_free_percent >= limits.filesystem_block_percent
+                    )
+                    memory_healthy = (
+                        metrics.memory_available_bytes is not None
+                        and metrics.memory_available_bytes >= limits.memory_reduce_bytes
+                        and memory_available_percent is not None
+                        and memory_available_percent >= limits.memory_reduce_percent
+                    )
+                    campaign_quiescent = metrics.scrape_processes == 0 and metrics.browser_processes == 0
+                    idle_sample_safe = (
+                        metrics.cpu_idle_percent is not None
+                        and 0.0 <= metrics.cpu_idle_percent <= 100.0
+                        and metrics.cpu_idle_percent >= limits.darwin_high_load_cpu_idle_safe_percent
+                    )
+                    if idle_sample_safe and fs_above_hard and memory_healthy and campaign_quiescent:
+                        reasons.append(_reason(
+                            "darwin_high_load_reduced_with_cpu_headroom", "reduced",
+                            round(load_per_cpu, 3), limits.load_block_per_cpu,
+                            "High macOS load coincides with independently sampled CPU headroom; use reduced network-only capacity.",
+                        ))
+                    else:
+                        reasons.append(_reason(
+                            "load_per_cpu_blocked", "blocked", round(load_per_cpu, 3),
+                            limits.load_block_per_cpu, "Normalized five-minute load reached the blocked threshold.",
+                        ))
+                        if metrics.cpu_idle_percent is None:
+                            reasons.append(_reason(
+                                "darwin_cpu_idle_unavailable", "blocked", None, "required_for_high_load",
+                                "A macOS CPU-idle sample is required before high load can be downgraded.",
+                            ))
+                        elif not 0.0 <= metrics.cpu_idle_percent <= 100.0:
+                            reasons.append(_reason(
+                                "darwin_cpu_idle_invalid", "blocked", metrics.cpu_idle_percent,
+                                "0..100", "The sampled macOS CPU-idle percentage is invalid.",
+                            ))
+                        elif metrics.cpu_idle_percent < limits.darwin_high_load_cpu_idle_safe_percent:
+                            reasons.append(_reason(
+                                "darwin_cpu_idle_percent_blocked", "blocked",
+                                round(metrics.cpu_idle_percent, 3),
+                                limits.darwin_high_load_cpu_idle_safe_percent,
+                                "Sampled macOS CPU idle is below the safe reduced-capacity threshold.",
+                            ))
+                else:
+                    reasons.append(_reason(
+                        "load_per_cpu_blocked", "blocked", round(load_per_cpu, 3),
+                        limits.load_block_per_cpu, "Normalized five-minute load reached the blocked threshold.",
+                    ))
             elif load_per_cpu >= limits.load_reduce_per_cpu:
                 reasons.append(_reason(
                     "load_per_cpu_reduced", "reduced", round(load_per_cpu, 3),
@@ -403,6 +467,11 @@ def evaluate_capacity(metrics: HostMetrics, thresholds: Thresholds | None = None
     else:
         workers = {"network_workers": 0, "browser_workers": 0}
 
+    cpu_idle_public = (
+        metrics.cpu_idle_percent
+        if metrics.cpu_idle_percent is not None and 0.0 <= metrics.cpu_idle_percent <= 100.0
+        else None
+    )
     public_metrics: dict[str, object] = {
         "filesystem_total_bytes": metrics.filesystem_total_bytes,
         "filesystem_free_bytes": metrics.filesystem_free_bytes,
@@ -413,6 +482,9 @@ def evaluate_capacity(metrics: HostMetrics, thresholds: Thresholds | None = None
         "load5": metrics.load5,
         "cpu_count": metrics.cpu_count,
         "load5_per_cpu": None if load_per_cpu is None else round(load_per_cpu, 3),
+        "capacity_platform": metrics.platform,
+        "cpu_idle_percent": None if cpu_idle_public is None else round(cpu_idle_public, 3),
+        "cpu_busy_percent": None if cpu_idle_public is None else round(100.0 - cpu_idle_public, 3),
         "swap_total_bytes": metrics.swap_total_bytes,
         "swap_used_bytes": metrics.swap_used_bytes,
         "swap_used_percent": None if swap_used_percent is None else round(swap_used_percent, 3),
@@ -470,6 +542,26 @@ def _run_readonly(command: Sequence[str]) -> str:
     if result.returncode != 0:
         raise RuntimeError("readonly_command_failed")
     return result.stdout
+
+
+def _parse_macos_cpu_idle(text: str) -> float:
+    matches = re.findall(
+        r"CPU usage:\s*[\d.]+%\s*user,\s*[\d.]+%\s*sys,\s*([\d.]+)%\s*idle",
+        text,
+    )
+    if not matches:
+        raise RuntimeError("macos_cpu_idle_unparseable")
+    value = float(matches[-1])
+    if not 0.0 <= value <= 100.0:
+        raise RuntimeError("macos_cpu_idle_invalid")
+    return value
+
+
+def _read_macos_cpu_idle() -> float:
+    # The first top sample is cumulative/noisy.  Request two one-second
+    # samples and use the final CPU summary for a short bounded headroom check.
+    text = _run_readonly(("/usr/bin/top", "-l", "2", "-n", "0", "-s", "1"))
+    return _parse_macos_cpu_idle(text)
 
 
 def _read_macos_memory() -> tuple[int, int, int, int]:
@@ -644,6 +736,16 @@ def collect_metrics(filesystem_path: Path, log_roots: Sequence[Path], output_roo
     if cpu_count is None:
         errors.append("cpu_count_collection_failed")
 
+    cpu_idle_percent: float | None = None
+    if sys.platform == "darwin":
+        try:
+            cpu_idle_percent = _read_macos_cpu_idle()
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+            # CPU idle is a conditional corroborating metric.  Evaluation
+            # fails closed when Darwin load is high and this sample is absent;
+            # normal-load snapshots do not need to fail solely on this probe.
+            cpu_idle_percent = None
+
     scrape_count: int | None = None
     browser_count: int | None = None
     try:
@@ -676,6 +778,8 @@ def collect_metrics(filesystem_path: Path, log_roots: Sequence[Path], output_roo
         max_log_bytes=root_scan.max_log_bytes,
         configured_roots_total_bytes=root_scan.total_bytes,
         fd_soft_limit=fd_soft,
+        platform=sys.platform,
+        cpu_idle_percent=cpu_idle_percent,
         configured_log_roots=len(log_roots),
         configured_output_roots=len(output_roots),
         inspected_roots=root_scan.inspected_roots,
@@ -717,6 +821,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--memory-reduce-percent", type=float, default=20.0)
     result.add_argument("--load-reduce-per-cpu", type=float, default=0.8)
     result.add_argument("--load-block-per-cpu", type=float, default=1.5)
+    result.add_argument("--darwin-high-load-cpu-idle-safe-percent", type=float, default=30.0)
     result.add_argument("--swap-reduce-percent", type=float, default=50.0)
     result.add_argument("--swap-block-percent", type=float, default=75.0)
     result.add_argument("--processes-reduce-above", type=int, default=6)
@@ -746,6 +851,7 @@ def thresholds_from_args(args: argparse.Namespace) -> Thresholds:
         memory_reduce_percent=args.memory_reduce_percent,
         load_reduce_per_cpu=args.load_reduce_per_cpu,
         load_block_per_cpu=args.load_block_per_cpu,
+        darwin_high_load_cpu_idle_safe_percent=args.darwin_high_load_cpu_idle_safe_percent,
         swap_reduce_percent=args.swap_reduce_percent,
         swap_block_percent=args.swap_block_percent,
         processes_reduce_above=args.processes_reduce_above,
