@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "sanitized_focused_test_provenance",
+  "completed_at_utc": "2026-11-07T03:46:00Z",
+  "scope": "ownership-aware post-start capacity evaluation and privacy-safe launch failure stages",
+  "published_code_commit": "ba3ed551623ce7ec991ca4e5f4a26ca1e9f3e252",
+  "launcher_sha256": "3ddfed27f6b08c01c9ce44b4dd31981e9a223828f3eb4de9e5cb50374fcf974b",
+  "test_sha256": "01d488595ac9b681e2284f9d75669aa5cba3a94ef7ea4a1f42ecfb206fad3791",
+  "publication_manifest_sha256": "b2abfa768f24e4c1d5fa2924ec812ccd600b144950b77fd46944955b5ab0aecf",
+  "primary_test_run": {
+    "passed": 96,
+    "failed": 0,
+    "exit_code": 0
+  },
+  "independent_test_run": {
+    "passed": 96,
+    "failed": 0,
+    "exit_code": 0,
+    "review_sha256": "988a0ff502dcfeb97341bea21ab88c2600febc603f3f5f8008f22a170edf2279"
+  },
+  "verified_invariants": {
+    "post_start_owned_controller_can_be_excluded_only_after_exact_ownership_reconciliation": true,
+    "external_preflight_and_controller_startup_guards_remain_globally_quiescent": true,
+    "foreign_scraper_or_browser_processes_remain_blocking": true,
+    "cpu_idle_memory_disk_fd_log_and_root_hard_gates_remain_blocking": true,
+    "failure_receipts_expose_stable_stage_and_code_without_private_process_details": true,
+    "primary_archive_mirrors_byte_identical": true
+  },
+  "operational_effect": {
+    "guard_run": false,
+    "preflight_run": false,
+    "launcher_run": false,
+    "controller_run": false,
+    "packet_built": false,
+    "source_or_network_work_run": false,
+    "runtime_mutated": false,
+    "source_evidence_changed": false,
+    "verified_dates_advanced": false
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_data_or_urls_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "infrastructure_metrics_published": false,
+    "credentials_published": false,
+    "canonical_workbook_published": false,
+    "private_logs_or_notes_published": false
+  }
+}
