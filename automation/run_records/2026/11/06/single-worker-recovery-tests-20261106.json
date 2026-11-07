@@ -1,0 +1,28 @@
+{
+  "builder_commit": "7c866cbed6d54224f2faaaf8fb1fdb228d804bb9",
+  "file_pins": {
+    "builder_sha256": "80c976f07758afd40c64d7d27773e3b945a8ff3e25d5a7a23f7321367d82ff48",
+    "builder_test_sha256": "a68bb02489706a53a7df01631ad8dbb468f3c7c6cc6cf99ce882aa06bbe73c99"
+  },
+  "kind": "sanitized_immutable_single_worker_recovery_test_provenance",
+  "occurred_at_utc": "2026-11-07T00:31:40Z",
+  "outcome": "passed",
+  "privacy": {
+    "credentials_published": false,
+    "local_paths_published": false,
+    "private_process_ids_published": false,
+    "raw_identities_published": false,
+    "raw_urls_published": false
+  },
+  "runtime_commit": "7f1969ad3303d17066a44542bbef863a7569b288",
+  "schema_version": 1,
+  "test_fix_commit": "9d44d928832515e77cbba2f6c923dce0f566ec15",
+  "verification": {
+    "python_dont_write_bytecode": true,
+    "single_worker_runtime_and_builder_tests": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 76
+    }
+  }
+}
