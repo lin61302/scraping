@@ -1,0 +1,64 @@
+{
+  "code_publication": {
+    "base_commit": "4ffa9036abd9c072955e5b984de38d0ab4d5d7f4",
+    "base_manifest_sha256": "24757fc4639f68cd1a5cbf8a15d195799db4d4e6e227e14f84f6cca1691209dc",
+    "branch": "main",
+    "fix_commit": "dc13adee3726c190fe753e330cc030637c7bd342",
+    "fix_manifest_sha256": "e2b657cdc831954aeb451823529e0fe2e3b84a224501579f797e5801fa0b84ce",
+    "freshness_commit": "e43080a2b0b818a1e9f0212af1516fb0b8c2990e",
+    "freshness_manifest_sha256": "4241b16a3f3236fe0f9e5fd12f33ffb066b1327f0ef8c8ed11427b3e66a9dae2",
+    "remote_verified": true,
+    "repository": "lin61302/scraping"
+  },
+  "code_pins": {
+    "host_capacity_guard_sha256": "982e2ce12e4505b489c5672ea69cbaa3d8fe8242b5e3336dc2cfea4b76c9a196",
+    "host_capacity_guard_test_sha256": "d04ab00786647d64459dde47d1f4e06bcb1d6718015f9bf63f26c8c6c8203c9d",
+    "space_app_sha256": "a98de98e9a0a8547e7e57356f990161803cdfa6806ce6534b857b6893ad8fe89",
+    "space_exporter_sha256": "2ec6b3e667505f24da268ca876a6f34f3885b94f205bcf443d4f91add0d126f6",
+    "space_test_sha256": "a6c09a360a15ba90a4415e4244201dc2ba11e368366624edefc95efd645a7c32"
+  },
+  "kind": "sanitized_immutable_autonomous_source_advancement_test_provenance",
+  "occurred_at_utc": "2026-11-07T00:13:54Z",
+  "operational_effect": {
+    "capacity_guard_run": false,
+    "launch_run": false,
+    "preflight_run": false,
+    "source_or_network_work_run": false,
+    "source_state_changed": false
+  },
+  "outcome": "passed",
+  "privacy": {
+    "credentials_published": false,
+    "local_paths_published": false,
+    "private_process_ids_published": false,
+    "raw_identities_published": false,
+    "raw_urls_published": false
+  },
+  "schema_version": 1,
+  "verification": {
+    "guard_and_consumer_tests": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 148
+    },
+    "node_syntax_check_passed": true,
+    "python_dont_write_bytecode": true,
+    "space_privacy_and_snapshot_tests": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 36
+    },
+    "space_smoke_tests": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 36
+    },
+    "tracker_snapshot": {
+      "country_groups": 73,
+      "scrape_series": 252,
+      "sha256": "a50c5e5a67db4cd7fcf8df8629adaf4bbe8cf73d5482072a9f9827dde22d2cba",
+      "source_count": 653,
+      "tcg_series": 629
+    }
+  }
+}
