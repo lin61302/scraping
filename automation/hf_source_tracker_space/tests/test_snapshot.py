@@ -476,10 +476,13 @@ class SnapshotTests(unittest.TestCase):
         for source in ("7sur7.cd","liberianinvestigator.com","247malawi.com","eluniverso.com","elcomercio.pe"):
             self.assertEqual(by_source[source]["pipeline_state"],"Parked — exact residual ledger unavailable")
         self.assertEqual(by_source["csmonitor.com"]["pipeline_state"],"First-pass complete; production promotion pending")
-        self.assertEqual(summary["latest_window"]["state"],"prepared_waiting_capacity")
+        self.assertEqual(by_source["csmonitor.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
+        self.assertEqual(by_source["csmonitor.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
+        self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
         self.assertEqual(summary["source_override_count"],10)
         self.assertEqual(set(contracts),{
-            "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug"
+            "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug",
+            "MLP|csmonitor.com",
         })
 
     def test_current_scope_contracts_use_explicit_null_not_zero(self):
@@ -489,7 +492,7 @@ class SnapshotTests(unittest.TestCase):
             for operation in operations["sources"].values()
             if operation["count_contract"] is not None
         ]
-        self.assertEqual(len(contracts),3)
+        self.assertEqual(len(contracts),4)
         for contract in contracts:
             with self.subTest(scope=contract["scope_label"], start=contract["range_start"]):
                 self.assertEqual(contract["publication_date_field"],"date_publish")
@@ -570,13 +573,13 @@ class SnapshotTests(unittest.TestCase):
 
     def test_release_exposes_latest_operations_without_advancing_verified_dates(self):
         self.assertEqual(self.data["meta"]["snapshot_version"],5)
-        self.assertEqual(self.data["operations"]["latest_window"]["state"],"prepared_waiting_capacity")
+        self.assertEqual(self.data["operations"]["latest_window"]["state"],"capacity_blocked_no_launch")
         self.assertFalse(self.data["operations"]["latest_window"]["work_started"])
         self.assertGreaterEqual(
             self.data["operations"]["generated_at_utc"],
             self.data["operations"]["latest_window"]["evidence_through_utc"],
         )
-        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],3)
+        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],4)
         by_source={row["source"]:row for row in self.data["sources"]}
         expected={
             "newsroompanama.com":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
