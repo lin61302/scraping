@@ -1,0 +1,152 @@
+{
+  "boundary_effect": {
+    "coverage_advanced": false,
+    "first_pass_verified_through_changed": false,
+    "operational_through_changed": false,
+    "recorded_notion_boundary_changed": false,
+    "strict_verified_through_changed": false
+  },
+  "event": "preparation",
+  "execution_stages_started": {
+    "adapter": false,
+    "attempt": false,
+    "authorization": false,
+    "controller": false,
+    "external_capacity_guard": false,
+    "launcher": false,
+    "network": false,
+    "preflight": false,
+    "process_inspection": false,
+    "source": false,
+    "ssh": false
+  },
+  "kind": "sanitized_immutable_single_worker_recovery_packet_preparation_provenance",
+  "occurred_at_utc": "2026-11-07T00:33:40Z",
+  "pins": {
+    "binding_integrity_sha256": "c4488d202dba5ebe47bfc273522b85cfa7e0eac2ad68b350fbc8950fd5738642",
+    "binding_sha256": "d580328dd5ba3255789cf030d82fac668b52b29bc28b59853deb9ca395ee844d",
+    "builder_commit": "7c866cbed6d54224f2faaaf8fb1fdb228d804bb9",
+    "builder_independent_review_sha256": "57c2c9ac5530b667e60020d42d2d8adb873e4aba0473173612e8822851a8c9fe",
+    "builder_sha256": "80c976f07758afd40c64d7d27773e3b945a8ff3e25d5a7a23f7321367d82ff48",
+    "builder_test_fix_commit": "9d44d928832515e77cbba2f6c923dce0f566ec15",
+    "builder_test_sha256": "a68bb02489706a53a7df01631ad8dbb468f3c7c6cc6cf99ce882aa06bbe73c99",
+    "bundle_integrity_sha256": "0d9b59569c6cbae2f48c4493841567997b55c3d1381561782af232a1282ea079",
+    "capacity_guard_commit": "4ffa9036abd9c072955e5b984de38d0ab4d5d7f4",
+    "capacity_guard_sha256": "982e2ce12e4505b489c5672ea69cbaa3d8fe8242b5e3336dc2cfea4b76c9a196",
+    "construction_record_sha256": "fcb26d0ef171f37dd0c62abc8014313db774d4976b854ac38b8f25e2c5397c0e",
+    "controller_sha256": "d93899685ac8ae461462a4c9680ef1023f1b67dc8388105e185fa3b307529f12",
+    "deployment_manifest_sha256": "34f8eb636a931d1d95faba50df9da561ef85e67000bc34ccb3459f6f4ac319e1",
+    "deployment_sha256": "7c45c85fb825758e9a8de219205f73402535ee17e3207a7c2ef1ad22185db86d",
+    "focused_test_record_sha256": "4199ec4d52f5166d940aca6476426dda124401bb72151b5a30344db4606b44ec",
+    "full_integrity_report_sha256": "deeab7fdf568deb3d5b65a5844561276ce91ecf68fc0ab9571f437fa74672b01",
+    "identity_proof_sha256": "aa50efbde5cab72d9518d9b02e2db7ce96ce178ede365359d215d0eda7d97fbe",
+    "launch_argv_sha256": "e55925b71cbb227d2bfb1507ce1e986198ca838544cb9cd5f5cb919c236df59d",
+    "launcher_sha256": "099683d4cf7ddc10ce40e462dbe9a37d0171320757312addc61f373c426e5951",
+    "packet_independent_audit_sha256": "f2d8918eaf8abd14e62fd380987cd4e04bcdd052d7d3ce9e483e8effe963378e",
+    "plan_sha256": "02aba72aff48dbc7ba8a989bc3ca8b23eb37f29c2fafa02e1899a4541dc26377",
+    "predecessor_preservation_sha256": "34fe8b5913dc3ca2745deeff5b8e05844fd50079e095d53eb85ba5d151d28fb5",
+    "preflight_argv_sha256": "70f83bc0bc40658cf068c2b4dc5825994584b4f27b79bec0a6090c0609a10bed",
+    "publication_pins_sha256": "b5e14209b7d8dfcc319dc3b53c6f6f05ec8b22ab97f11d64db34c9c39093cafd",
+    "readiness_sha256": "e6bcea73eed13afdd9c230c9194cf5a0a61a4cbdd63b1bec0875734446da9c3c",
+    "runtime_commit": "7f1969ad3303d17066a44542bbef863a7569b288",
+    "runtime_independent_review_sha256": "6407d2677f2daf89a57db5c4e8ad9c2f92dcb7ed9a853f1abe3c642a44d3c4c0",
+    "sealed_parent_proof_sha256": "ecd86c95bbf1e0e51238e5cee6c1af20fa76d2451c1bbb77f902f901d860773f",
+    "source_count_tcg_handoff_sha256": "ce0583cacae5f1b247c2421a64fbeac8a57238ca4fba1cf0514f0ef37f8c4132"
+  },
+  "preserved_prior_results": {
+    "full_source_rerun_permitted": false,
+    "passed_identities": 1240,
+    "rediscovery_permitted": false,
+    "verified_exclusions": 546
+  },
+  "privacy": {
+    "credentials_published": false,
+    "infrastructure_details_published": false,
+    "local_paths_published": false,
+    "private_process_ids_published": false,
+    "raw_identities_published": false,
+    "raw_urls_published": false
+  },
+  "schema_version": 1,
+  "scope": [
+    {
+      "country_code": "PAN",
+      "reason_families": [
+        "parser_title_disagreement",
+        "insufficient_visible_maintext"
+      ],
+      "repair_candidates": 221
+    },
+    {
+      "country_code": "SSD",
+      "lanes": [
+        {
+          "exact_identities": 143,
+          "kind": "parser_repair"
+        },
+        {
+          "exact_identities": 1,
+          "kind": "access_blocked_redirect_review"
+        }
+      ],
+      "repair_candidates": 144
+    },
+    {
+      "country_code": "UGA",
+      "reason_families": [
+        "parser_title_disagreement"
+      ],
+      "repair_candidates": 31
+    }
+  ],
+  "sequence": {
+    "all_directories_private": true,
+    "all_runtime_roots_empty": true,
+    "browser_ceiling": 0,
+    "child_log_max_bytes": 52428800,
+    "deployment_directories": 16,
+    "deployment_files": 54,
+    "exact_identities": 396,
+    "isolated_lane_failures": true,
+    "lane_count": 4,
+    "network_ceiling": 1,
+    "packet_directories": 29,
+    "phase_count": 1,
+    "production_writes": false,
+    "python_bytecode_disabled": true,
+    "runtime_roots": 5,
+    "verified_sidecars": 18
+  },
+  "sequence_id": "local-exact-pan-ssd-uga-repair-recovery-20261106-through-20260930",
+  "source_state_changed": false,
+  "status": "offline_prepared_independently_audited_unauthorized_unattempted_unlaunched",
+  "verification": {
+    "builder_independent_review": "approved_zero_blockers",
+    "builder_output_static_audit": {
+      "failed": 0,
+      "passed": 406
+    },
+    "exact_identity_union_verified": true,
+    "focused_tests": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 76
+    },
+    "manifest_and_deployment_closure_verified": true,
+    "monthly_scraped_promoted_tcg_contract": {
+      "missing_history_inferred_as_zero": false,
+      "publication_date_field": "date_publish",
+      "sealed": true,
+      "source_count": 3,
+      "series_values_status": "pending_terminal_receipts"
+    },
+    "packet_independent_audit": {
+      "blockers": 0,
+      "manifest_subaudit_passed": 498,
+      "primary_checks_passed": 682,
+      "result": "approved"
+    },
+    "routine_user_verification_required": false,
+    "runtime_independent_review": "approved_zero_blockers"
+  }
+}
