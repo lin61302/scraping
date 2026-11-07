@@ -1,0 +1,48 @@
+{
+  "code_publication": {
+    "branch": "main",
+    "commit": "7f1969ad3303d17066a44542bbef863a7569b288",
+    "manifest_sha256": "de4e351e253ac2d658b406b91416a62c1df0533205464e42aa48c67e32236544",
+    "remote_verified": true,
+    "repository": "lin61302/scraping"
+  },
+  "code_pins": {
+    "controller_sha256": "d93899685ac8ae461462a4c9680ef1023f1b67dc8388105e185fa3b307529f12",
+    "controller_test_sha256": "6b5b38b0532dc910d772a588d6882b00edf325de41069990b31c4fab34203eb8",
+    "local_launcher_sha256": "099683d4cf7ddc10ce40e462dbe9a37d0171320757312addc61f373c426e5951",
+    "local_launcher_test_sha256": "1f66d3ec8764a5b7f363fd209e71608fa55e3d1e1105acaf132f3634501cc0fa"
+  },
+  "kind": "sanitized_immutable_exact_sequence_one_worker_test_provenance",
+  "occurred_at_utc": "2026-11-07T00:23:50Z",
+  "operational_effect": {
+    "capacity_guard_run": false,
+    "controller_run": false,
+    "launch_run": false,
+    "preflight_run": false,
+    "source_or_network_work_run": false,
+    "source_state_changed": false
+  },
+  "outcome": "changed_surfaces_passed",
+  "privacy": {
+    "credentials_published": false,
+    "local_paths_published": false,
+    "private_process_ids_published": false,
+    "raw_identities_published": false,
+    "raw_urls_published": false
+  },
+  "schema_version": 1,
+  "verification": {
+    "full_workspace_suite": {
+      "errors": 6,
+      "failed": 0,
+      "passed": 1198,
+      "unrelated_existing_tracker_precondition_errors": true
+    },
+    "python_dont_write_bytecode": true,
+    "targeted_controller_and_local_launcher": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 59
+    }
+  }
+}
