@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "kind": "sanitized_immutable_single_worker_recovery_packet_preparation_provenance",
+  "event": "preparation",
+  "occurred_at_utc": "2026-11-07T11:36:00Z",
+  "sequence_id": "local-exact-pan-ssd-uga-repair-recovery2-20261107-through-20260930",
+  "status": "offline_prepared_independently_audited_unauthorized_unattempted_unlaunched",
+  "source_state_changed": false,
+  "scope": [
+    {"country_code": "PAN", "repair_candidates": 221},
+    {"country_code": "SSD", "repair_candidates": 144, "lane_counts": [143, 1]},
+    {"country_code": "UGA", "repair_candidates": 31}
+  ],
+  "preserved_prior_results": {
+    "passed_identities": 1240,
+    "verified_exclusions": 546,
+    "rediscovery_permitted": false,
+    "full_source_rerun_permitted": false
+  },
+  "sequence": {
+    "phase_count": 1,
+    "lane_count": 4,
+    "exact_identities": 396,
+    "network_ceiling": 1,
+    "browser_ceiling": 0,
+    "child_log_max_bytes": 52428800,
+    "lane_timeout_seconds": 10800,
+    "wall_limit_seconds": 43200,
+    "production_writes": false,
+    "isolated_lane_failures": true,
+    "runtime_roots": 5,
+    "all_runtime_roots_empty": true,
+    "all_directories_private": true,
+    "deployment_files": 54,
+    "packet_directories": 29,
+    "packet_files": 108,
+    "verified_sidecars": 19,
+    "python_bytecode_disabled": true
+  },
+  "pins": {
+    "runtime_commit": "ba3ed551623ce7ec991ca4e5f4a26ca1e9f3e252",
+    "builder_commit": "44f013862bcf5d178233ef74b5954d7276bb141b",
+    "builder_sha256": "7fc73453394e8dc517f2e3f41dedb5ff714112e4d689d11a0b66d800fa20cf76",
+    "builder_test_sha256": "8be585b0b653c7b431b60214b668f8ceea267b6de912cdc423c03de3b771ffda",
+    "plan_sha256": "7ceddac503388e36613c5e3c03e94b1b3c588e5da70f58453d30879218b54d79",
+    "deployment_sha256": "763762e3412b7929a091bca79bb33b48b16771f3efb4195097f45c950b76b04e",
+    "deployment_manifest_sha256": "4aa67289a5f8af091d7473db668276e6187dd6f5eb47c22016dcde00090c270f",
+    "full_integrity_report_sha256": "9ea190696e867c7bb23b35f828dde6edcc920d8172212e8f030065ca2d7c12b4",
+    "binding_sha256": "4d9a69cde876cf771495d4ee7021f56b08d9fef7dd23689d3997df5cb3a4dfd2",
+    "readiness_sha256": "354ac1d4c65d7d03d80c471b691ac8498b85ad5eef83a4d4bdbe2087b0afacd1",
+    "binding_integrity_sha256": "9ec7ac6a9f7b62bad1571eeeed54a888cbb7442d69a56105bcc5fb1eb501eaa0",
+    "preflight_argv_sha256": "23ba612739bb9ddfe24ec27b64a34ffd16bfd9525daa9435020c4c0aae08e11f",
+    "launch_argv_sha256": "c26abe64b91e701500da2176c501c5ef15bb62b1e38600b330264c2796504501",
+    "source_count_tcg_handoff_sha256": "720e5d38ae77992f32ae20b0e46717b218bf028ce624ac384b8f911c2e7d16d6",
+    "consumed_predecessor_failure_preservation_sha256": "af211727a2ba920dbe7403bedc8af68d311a72fa71ff773b6db271d23e3f11e6",
+    "packet_independent_audit_sha256": "46873400cb320babcfb6582f778b318357fffc0c3f58c11452c92d4deaee44cd"
+  },
+  "verification": {
+    "builder_and_runtime_focused_tests": {"passed": 117, "failed": 0, "errors": 0},
+    "independent_builder_repeat": {"passed": 117, "failed": 0, "errors": 0},
+    "packet_independent_audit": {"passed": 88, "failed": 0, "blockers": 0},
+    "launcher_only_publication_verified": true,
+    "unchanged_controller_content_pinned": true,
+    "consumed_predecessor_preserved_without_runtime_read": true,
+    "exact_identity_union_verified": true,
+    "manifest_and_deployment_closure_verified": true,
+    "monthly_scraped_promoted_tcg_contract": {
+      "publication_date_field": "date_publish",
+      "source_count": 3,
+      "sealed": true,
+      "series_values_status": "pending_terminal_receipts",
+      "missing_history_inferred_as_zero": false
+    },
+    "routine_user_verification_required": false
+  },
+  "execution_stages_started": {
+    "external_capacity_guard": false,
+    "process_inspection": false,
+    "preflight": false,
+    "authorization": false,
+    "attempt": false,
+    "launcher": false,
+    "controller": false,
+    "adapter": false,
+    "source": false,
+    "network": false,
+    "ssh": false
+  },
+  "boundary_effect": {
+    "recorded_notion_boundary_changed": false,
+    "operational_through_changed": false,
+    "first_pass_verified_through_changed": false,
+    "strict_verified_through_changed": false,
+    "coverage_advanced": false
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "raw_urls_published": false,
+    "local_paths_published": false,
+    "infrastructure_details_published": false,
+    "credentials_published": false,
+    "private_process_ids_published": false
+  },
+  "next_step": "At the next eligible scheduled window, run one capacity guard against only the fresh packet roots, then use the one-time preflight and launch path if all gates pass."
+}
