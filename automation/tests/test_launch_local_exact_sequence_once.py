@@ -21,6 +21,7 @@ if str(AUTOMATION) not in sys.path:
     sys.path.insert(0, str(AUTOMATION))
 
 from ops import launch_local_exact_sequence_once as launcher  # noqa: E402
+from ops.host_capacity_guard import GIB, HostMetrics  # noqa: E402
 
 
 def sha(path: Path) -> str:
@@ -79,6 +80,39 @@ def green_process_snapshot(own: int = 2) -> dict[str, object]:
     }
 
 
+def darwin_high_load_metrics(**overrides: object) -> HostMetrics:
+    values: dict[str, object] = {
+        "filesystem_total_bytes": 1000 * GIB,
+        "filesystem_free_bytes": 200 * GIB,
+        "memory_total_bytes": 128 * GIB,
+        "memory_available_bytes": 64 * GIB,
+        "load5": 80.0,
+        "cpu_count": 16,
+        "swap_total_bytes": 16 * GIB,
+        "swap_used_bytes": 1 * GIB,
+        "scrape_processes": 1,
+        "browser_processes": 0,
+        "max_log_bytes": 0,
+        "configured_roots_total_bytes": 0,
+        "fd_soft_limit": 8192,
+        "platform": "darwin",
+        "cpu_idle_percent": 60.0,
+        "configured_log_roots": 1,
+        "configured_output_roots": 1,
+        "inspected_roots": 2,
+    }
+    values.update(overrides)
+    return HostMetrics(**values)  # type: ignore[arg-type]
+
+
+def runtime_stub():
+    return mock.Mock(
+        deployment_root=Path("/private/deployment"),
+        receipt_root=Path("/private/receipts"),
+        output_root=Path("/private/outputs"),
+    )
+
+
 def test_startup_capacity_accepts_one_owned_controller_process():
     startup_capacity = green_capacity()
     startup_capacity["metrics"] = {
@@ -87,6 +121,104 @@ def test_startup_capacity_accepts_one_owned_controller_process():
     }
 
     assert launcher._startup_capacity_errors(startup_capacity) == []
+
+
+def test_initial_capacity_guard_still_requires_global_quiescence():
+    with mock.patch.object(
+        launcher, "collect_metrics", return_value=darwin_high_load_metrics(),
+    ):
+        report = launcher.local_capacity_report(runtime_stub(), 1)
+    assert report["status"] == "blocked"
+    assert report["launch_allowed"] is False
+    assert "load_per_cpu_blocked" in {
+        row["code"] for row in report["reasons"]
+    }
+    assert "matching_network_process_already_running" in (
+        launcher._capacity_errors(report, 1)
+    )
+
+
+def test_post_start_owned_controller_is_excluded_from_darwin_load_gate():
+    snapshot = green_process_snapshot(own=1)
+    with mock.patch.object(
+        launcher, "collect_metrics", return_value=darwin_high_load_metrics(),
+    ):
+        report = launcher.local_capacity_report(
+            runtime_stub(), 1, process_snapshot=snapshot,
+        )
+    assert report["status"] == "reduced"
+    assert report["launch_allowed"] is True
+    assert report["metrics"]["scrape_processes"] == 0
+    assert report["post_start_ownership"]["applied"] is True
+    assert launcher._post_start_capacity_errors(report, snapshot, 1) == []
+
+
+@pytest.mark.parametrize(
+    ("metrics", "snapshot", "expected_error"),
+    (
+        (
+            darwin_high_load_metrics(scrape_processes=2),
+            {
+                **green_process_snapshot(own=1),
+                "foreign_network_processes": 1,
+            },
+            "post_start_foreign_network_process_detected",
+        ),
+        (
+            darwin_high_load_metrics(browser_processes=1),
+            {**green_process_snapshot(own=1), "browser_processes": 1},
+            "post_start_browser_process_detected",
+        ),
+    ),
+)
+def test_post_start_foreign_or_browser_process_still_blocks(
+    metrics, snapshot, expected_error,
+):
+    with mock.patch.object(launcher, "collect_metrics", return_value=metrics):
+        report = launcher.local_capacity_report(
+            runtime_stub(), 1, process_snapshot=snapshot,
+        )
+    errors = launcher._post_start_capacity_errors(report, snapshot, 1)
+    assert report["status"] == "blocked"
+    assert expected_error in errors
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("cpu_idle_percent", 29.0),
+        ("memory_available_bytes", 8 * GIB),
+        ("filesystem_free_bytes", 29 * GIB),
+        ("fd_soft_limit", 1000),
+        ("max_log_bytes", 4 * GIB),
+        ("configured_roots_total_bytes", 50 * GIB),
+    ),
+)
+def test_post_start_hard_resource_gates_are_never_relaxed(field, value):
+    with mock.patch.object(
+        launcher, "collect_metrics",
+        return_value=darwin_high_load_metrics(**{field: value}),
+    ):
+        report = launcher.local_capacity_report(
+            runtime_stub(), 1, process_snapshot=green_process_snapshot(own=1),
+        )
+    assert report["status"] == "blocked"
+    assert report["launch_allowed"] is False
+
+
+def test_post_start_process_count_mismatch_fails_closed():
+    with mock.patch.object(
+        launcher, "collect_metrics",
+        return_value=darwin_high_load_metrics(scrape_processes=2),
+    ):
+        report = launcher.local_capacity_report(
+            runtime_stub(), 1, process_snapshot=green_process_snapshot(own=1),
+        )
+    assert report["status"] == "blocked"
+    assert report["post_start_ownership"]["applied"] is False
+    assert "post_start_process_ownership_unproven" in {
+        row["code"] for row in report["reasons"]
+    }
 
 
 def test_foreign_network_ownership_remains_rejected_post_start():
@@ -620,7 +752,7 @@ def test_single_use_detached_launch_is_private_and_redacted(
         mock.patch.object(
             launcher, "local_capacity_report",
             return_value=green_capacity(network_ceiling),
-        ),
+        ) as capacity,
         mock.patch.object(launcher, "process_belongs_to_group", return_value=True),
         mock.patch.object(launcher.subprocess, "Popen", side_effect=fake_popen) as popen,
         mock.patch.object(launcher, "_inspect_startup", side_effect=inspect_now),
@@ -628,6 +760,7 @@ def test_single_use_detached_launch_is_private_and_redacted(
             launcher, "classify_post_start_processes",
             return_value=green_process_snapshot(own=4),
         ),
+        mock.patch.object(launcher, "terminate_process_group") as stop,
     ):
         receipt = launcher.launch(fixture.args())
         with pytest.raises(launcher.LaunchError):
@@ -638,6 +771,12 @@ def test_single_use_detached_launch_is_private_and_redacted(
     assert receipt["production_writes"] is False
     assert receipt["automatic_resume"] is False
     assert popen.call_count == 1
+    assert capacity.call_count == 2
+    assert capacity.call_args_list[0].kwargs == {}
+    assert capacity.call_args_list[1].kwargs["process_snapshot"] == (
+        green_process_snapshot(own=4)
+    )
+    stop.assert_not_called()
     assert "--resume" not in captured["command"]
     artifacts = (
         fixture.operation / "attempt_receipt.json",
@@ -692,7 +831,7 @@ def test_missing_startup_keeps_marker_and_fails_closed(tmp_path):
     cleanup = {
         "pid": 424242,
         "process_group_present_before": True,
-        "signals": ["SIGTERM"],
+        "signals": ["SIGTERM:424242"],
         "process_group_present_after": False,
         "exit_code": -15,
         "quiescent": True,
@@ -709,7 +848,15 @@ def test_missing_startup_keeps_marker_and_fails_closed(tmp_path):
     failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
     assert failure["status"] == "launch_failed"
     assert failure["automatic_resume"] is False
+    assert failure["failure_stage"] == "startup_inspection"
+    assert failure["failure_code"] == "startup_receipt_missing"
+    assert failure["receipt_presence"]["attempt_marker"] is True
+    assert failure["receipt_presence"]["startup_receipt"] is False
+    assert failure["receipt_presence"]["terminal_receipt"] is False
     assert failure["cleanup"]["quiescent"] is True
+    assert "pid" not in failure["cleanup"]
+    assert failure["cleanup"]["signals"] == ["SIGTERM"]
+    assert "424242" not in json.dumps(failure, sort_keys=True)
 
 
 def test_invalid_startup_capacity_cleans_up_and_closes_attempt(tmp_path):
@@ -739,6 +886,10 @@ def test_invalid_startup_capacity_cleans_up_and_closes_attempt(tmp_path):
         launcher.launch(fixture.args())
     stop.assert_called_once()
     assert (fixture.operation / "attempt_receipt.json").is_file()
+    failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
+    assert failure["failure_stage"] == "startup_capacity_validation"
+    assert failure["failure_code"] == "startup_capacity_blocked"
+    assert failure["receipt_presence"]["startup_receipt"] is True
 
 
 @pytest.mark.parametrize(
@@ -820,6 +971,9 @@ def test_launch_receipt_write_failure_forces_quiescence(tmp_path):
     stop.assert_called_once()
     failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
     assert failure["status"] == "launch_failed"
+    assert failure["failure_stage"] == "launch_receipt_write"
+    assert failure["failure_code"] == "launch_receipt_write_failed"
+    assert failure["receipt_presence"]["startup_receipt"] is True
     assert failure["cleanup"]["quiescent"] is True
 
 
@@ -1091,6 +1245,8 @@ def test_keyboard_interrupt_after_spawn_closes_and_keeps_marker(tmp_path):
     failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
     assert failure["status"] == "launch_failed"
     assert failure["error_type"] == "KeyboardInterrupt"
+    assert failure["failure_stage"] == "startup_inspection"
+    assert failure["failure_code"] == "startup_inspection_failed"
     assert failure["cleanup"]["quiescent"] is True
 
 
@@ -1119,6 +1275,8 @@ def test_startup_pid_mismatch_is_cleaned_and_closed(tmp_path):
         launcher.launch(fixture.args())
     stop.assert_called_once()
     failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
+    assert failure["failure_stage"] == "startup_pid_validation"
+    assert failure["failure_code"] == "startup_pid_outside_process_group"
     assert failure["cleanup"]["quiescent"] is True
 
 
@@ -1155,6 +1313,44 @@ def test_post_start_capacity_conflict_forces_quiescence(tmp_path):
     ):
         launcher.launch(fixture.args())
     stop.assert_called_once()
+    failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
+    assert failure["failure_stage"] == "post_start_capacity_validation"
+    assert failure["failure_code"] == "post_start_capacity_blocked"
+
+
+def test_post_start_classifier_exception_has_stable_failure_code(tmp_path):
+    fixture = LauncherFixture(tmp_path)
+
+    def fake_popen(command, **kwargs):
+        sequence_dir = private_dir(fixture.receipts / "local-exact-launcher-fixture")
+        write_private(
+            sequence_dir / "startup_receipt.json",
+            json.dumps(fixture.startup_receipt(), sort_keys=True) + "\n",
+        )
+        return FakeProcess()
+
+    cleanup = {"pid": 424242, "quiescent": True, "exit_code": -15}
+    with (
+        mock.patch.object(
+            launcher, "local_capacity_report", return_value=green_capacity(),
+        ),
+        mock.patch.object(
+            launcher, "classify_post_start_processes",
+            side_effect=OSError("fixture process scan failure"),
+        ),
+        mock.patch.object(launcher.subprocess, "Popen", side_effect=fake_popen),
+        mock.patch.object(launcher, "_inspect_startup", side_effect=inspect_now),
+        mock.patch.object(launcher, "process_belongs_to_group", return_value=True),
+        mock.patch.object(
+            launcher, "terminate_process_group", return_value=cleanup,
+        ) as stop,
+        pytest.raises(OSError, match="fixture process scan failure"),
+    ):
+        launcher.launch(fixture.args())
+    stop.assert_called_once()
+    failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
+    assert failure["failure_stage"] == "post_start_process_classification"
+    assert failure["failure_code"] == "post_start_process_classification_failed"
 
 
 def test_post_start_resource_block_forces_quiescence(tmp_path):
@@ -1190,3 +1386,6 @@ def test_post_start_resource_block_forces_quiescence(tmp_path):
     ):
         launcher.launch(fixture.args())
     stop.assert_called_once()
+    failure = json.loads((fixture.operation / "launch_receipt.json").read_text())
+    assert failure["failure_stage"] == "post_start_capacity_validation"
+    assert failure["failure_code"] == "post_start_capacity_blocked"

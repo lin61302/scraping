@@ -27,6 +27,7 @@ import subprocess
 import sys
 import time
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator, Mapping, Optional, Sequence
@@ -373,6 +374,7 @@ def _command_sha256(command: Sequence[str]) -> str:
 
 def local_capacity_report(
     runtime: RuntimePaths, network_ceiling: int = NETWORK_CEILING,
+    *, process_snapshot: Optional[Mapping[str, object]] = None,
 ) -> dict[str, object]:
     metrics = collect_metrics(
         runtime.deployment_root,
@@ -381,7 +383,67 @@ def local_capacity_report(
         scrape_patterns=SCRAPE_PATTERNS,
         browser_patterns=BROWSER_PATTERNS,
     )
+    ownership: Optional[dict[str, object]] = None
+    if process_snapshot is not None:
+        ownership = {
+            "applied": False,
+            "counts_match": False,
+            "scan_ok": process_snapshot.get("scan_ok") is True,
+        }
+        try:
+            raw_scrape = int(metrics.scrape_processes)  # type: ignore[arg-type]
+            raw_browser = int(metrics.browser_processes)  # type: ignore[arg-type]
+            own_network = int(process_snapshot.get("own_network_processes"))
+            foreign_network = int(process_snapshot.get("foreign_network_processes"))
+            browser_processes = int(process_snapshot.get("browser_processes"))
+        except (TypeError, ValueError):
+            pass
+        else:
+            counts_nonnegative = min(
+                raw_scrape, raw_browser, own_network, foreign_network,
+                browser_processes,
+            ) >= 0
+            counts_match = (
+                counts_nonnegative
+                and raw_scrape == own_network + foreign_network
+                and raw_browser == browser_processes
+            )
+            ownership.update({
+                "counts_match": counts_match,
+                "raw_scrape_processes": raw_scrape,
+                "raw_browser_processes": raw_browser,
+                "owned_network_processes": own_network,
+                "foreign_network_processes": foreign_network,
+                "browser_processes": browser_processes,
+            })
+            if process_snapshot.get("scan_ok") is True and counts_match:
+                # Only the launcher's post-start caller supplies a process
+                # snapshot.  Exact PGID/token ownership has already been
+                # established there, so remove only proven owned processes
+                # before re-evaluating the host.  Foreign and browser counts,
+                # plus every disk/memory/load/FD/log/root gate, remain intact.
+                metrics = replace(metrics, scrape_processes=foreign_network)
+                ownership["applied"] = True
     report = dict(evaluate_capacity(metrics, include_paths=False))
+    if ownership is not None:
+        report["post_start_ownership"] = ownership
+        if ownership.get("applied") is not True:
+            reasons = list(report.get("reasons") or [])
+            reasons.append({
+                "code": "post_start_process_ownership_unproven",
+                "severity": "blocked",
+                "actual": None,
+                "threshold": "exact_count_match",
+                "message": "Post-start process ownership could not be reconciled exactly.",
+            })
+            report.update({
+                "status": "blocked",
+                "launch_allowed": False,
+                "recommended_limits": {
+                    "network_workers": 0, "browser_workers": 0,
+                },
+                "reasons": reasons,
+            })
     recommended = report.get("recommended_limits")
     if isinstance(recommended, Mapping):
         report["sequence_limits"] = {
@@ -978,12 +1040,40 @@ def public_preflight(prepared: Mapping[str, object]) -> dict[str, object]:
     }
 
 
+def _privacy_safe_cleanup(
+    cleanup: Optional[Mapping[str, object]],
+) -> Optional[dict[str, object]]:
+    if cleanup is None:
+        return None
+    signals = []
+    for value in cleanup.get("signals") or []:
+        signal_name = str(value).split(":", 1)[0]
+        if signal_name and signal_name not in signals:
+            signals.append(signal_name)
+    return {
+        "quiescent": cleanup.get("quiescent") is True,
+        "exit_code": cleanup.get("exit_code"),
+        "process_group_present_before": cleanup.get(
+            "process_group_present_before"
+        ),
+        "process_group_present_after": cleanup.get(
+            "process_group_present_after"
+        ),
+        "signals": signals,
+        "process_scan_error": cleanup.get("process_scan_error"),
+    }
+
+
 def _failure_receipt(
     prepared: Mapping[str, object], error: BaseException,
-    cleanup: Optional[Mapping[str, object]],
+    cleanup: Optional[Mapping[str, object]], *, failure_stage: str,
+    failure_code: str,
 ) -> dict[str, object]:
     plan = prepared["plan"]
     paths = prepared["paths"]
+    runtime = prepared["runtime"]
+    startup_path = runtime.receipt_root / plan.sequence_id / "startup_receipt.json"
+    terminal_path = runtime.receipt_root / plan.sequence_id / "terminal_receipt.json"
     return {
         "schema_version": 1,
         "kind": "local_exact_sequence_launch_terminal",
@@ -998,7 +1088,16 @@ def _failure_receipt(
         "deployment_sha256": prepared["deployment"]["deployment_sha256"],
         "production_writes": False,
         "error_type": type(error).__name__,
-        "cleanup": cleanup,
+        "failure_stage": failure_stage,
+        "failure_code": failure_code,
+        "receipt_presence": {
+            "attempt_marker": paths["attempt_marker"].is_file(),
+            "startup_receipt": startup_path.is_file(),
+            "terminal_receipt": terminal_path.is_file(),
+            "controller_log": paths["controller_log"].is_file(),
+            "launch_receipt_before_failure_write": paths["launch_receipt"].is_file(),
+        },
+        "cleanup": _privacy_safe_cleanup(cleanup),
         "controller_log": _log_facts(paths["controller_log"]),
         "automatic_resume": False,
     }
@@ -1046,6 +1145,8 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
         _create_json_exclusive(paths["attempt_marker"], marker)
         process: Optional[subprocess.Popen[object]] = None
         cleanup: Optional[Mapping[str, object]] = None
+        failure_stage = "controller_log_create"
+        failure_code = "controller_log_create_failed"
         try:
             descriptor = os.open(
                 paths["controller_log"], os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600,
@@ -1053,6 +1154,8 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
             with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
                 previous_umask = os.umask(0o077)
                 try:
+                    failure_stage = "controller_spawn"
+                    failure_code = "controller_spawn_failed"
                     process = subprocess.Popen(
                         command,
                         cwd=str(runtime.deployment_root),
@@ -1065,15 +1168,22 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                     )
                 finally:
                     os.umask(previous_umask)
+            failure_stage = "startup_inspection"
+            failure_code = "startup_inspection_failed"
             startup, terminal, exit_code = _inspect_startup(
                 process, startup_path, terminal_path,
             )
             if startup is None:
+                failure_code = "startup_receipt_missing"
                 cleanup = terminate_process_group(process, cleanup_tokens)
                 if cleanup.get("quiescent") is not True:
                     raise LaunchError("startup missing and process group did not quiesce")
                 raise LaunchError("startup receipt missing after bounded inspection")
+            failure_stage = "startup_receipt_validation"
+            failure_code = "startup_receipt_invalid"
             validated_startup = controller.validate_sequence_startup(startup_path)
+            failure_stage = "startup_capacity_validation"
+            failure_code = "startup_capacity_blocked"
             startup_capacity_blockers = _startup_capacity_errors(
                 validated_startup.get("host_capacity_guard"), plan.network_ceiling,
             )
@@ -1089,21 +1199,27 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                 )
             validated_terminal = None
             if terminal is not None:
+                failure_stage = "terminal_receipt_validation"
+                failure_code = "terminal_receipt_invalid"
                 validated_terminal = controller.validate_sequence_terminal(terminal_path)
-            if (
-                validated_terminal is None
-                and exit_code is None
-                and not process_belongs_to_group(
+            if validated_terminal is None and exit_code is None:
+                failure_stage = "startup_pid_validation"
+                failure_code = "startup_pid_validation_failed"
+                if not process_belongs_to_group(
                     validated_startup.get("pid"), process.pid,
-                )
-            ):
-                cleanup = terminate_process_group(process, cleanup_tokens)
-                if cleanup.get("quiescent") is not True:
+                ):
+                    failure_code = "startup_pid_outside_process_group"
+                    cleanup = terminate_process_group(process, cleanup_tokens)
+                    if cleanup.get("quiescent") is not True:
+                        raise LaunchError(
+                            "startup PID mismatch and runtime did not quiesce"
+                        )
                     raise LaunchError(
-                        "startup PID mismatch and runtime did not quiesce"
+                        "startup PID is outside the detached process group"
                     )
-                raise LaunchError("startup PID is outside the detached process group")
             if exit_code is not None and validated_terminal is None:
+                failure_stage = "startup_process_exit"
+                failure_code = "controller_exited_without_terminal"
                 cleanup = terminate_process_group(process, cleanup_tokens)
                 if cleanup.get("quiescent") is not True:
                     raise LaunchError("early exit process group did not quiesce")
@@ -1114,20 +1230,32 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                     else 1
                 )
                 if exit_code is not None and exit_code != expected_exit:
+                    failure_stage = "terminal_exit_validation"
+                    failure_code = "controller_terminal_exit_mismatch"
                     cleanup = terminate_process_group(process, cleanup_tokens)
                     if cleanup.get("quiescent") is not True:
                         raise LaunchError(
                             "terminal exit mismatch and runtime did not quiesce"
                         )
                     raise LaunchError("controller exit code differs from terminal state")
-            post_start_capacity = local_capacity_report(runtime, plan.network_ceiling)
+            failure_stage = "post_start_process_classification"
+            failure_code = "post_start_process_classification_failed"
             post_start_processes = classify_post_start_processes(
                 process.pid, cleanup_tokens,
             )
+            failure_stage = "post_start_capacity_evaluation"
+            failure_code = "post_start_capacity_evaluation_failed"
+            post_start_capacity = local_capacity_report(
+                runtime, plan.network_ceiling,
+                process_snapshot=post_start_processes,
+            )
+            failure_stage = "post_start_capacity_validation"
+            failure_code = "post_start_capacity_validation_failed"
             post_start_blockers = _post_start_capacity_errors(
                 post_start_capacity, post_start_processes, plan.network_ceiling,
             )
             if post_start_blockers:
+                failure_code = "post_start_capacity_blocked"
                 cleanup = terminate_process_group(process, cleanup_tokens)
                 if cleanup.get("quiescent") is not True:
                     raise LaunchError(
@@ -1167,12 +1295,18 @@ def launch(args: argparse.Namespace) -> dict[str, object]:
                 "production_writes": False,
                 "automatic_resume": False,
             }
+            failure_stage = "launch_receipt_write"
+            failure_code = "launch_receipt_write_failed"
             _create_json_exclusive(paths["launch_receipt"], receipt)
             return receipt
         except BaseException as exc:
             if process is not None and cleanup is None:
                 cleanup = terminate_process_group(process, cleanup_tokens)
-            failure = _failure_receipt(prepared, exc, cleanup)
+            failure = _failure_receipt(
+                prepared, exc, cleanup,
+                failure_stage=failure_stage,
+                failure_code=failure_code,
+            )
             if not paths["launch_receipt"].exists():
                 _create_json_exclusive(paths["launch_receipt"], failure)
             if cleanup is not None and cleanup.get("quiescent") is not True:
