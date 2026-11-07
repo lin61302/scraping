@@ -466,7 +466,7 @@ class SnapshotTests(unittest.TestCase):
         for source in ("newsroompanama.com","eyeradio.org","eagle.co.ug"):
             with self.subTest(source=source):
                 row=by_source[source]
-                self.assertEqual(row["pipeline_state"],"Capacity remediation and exact repair refresh in progress")
+                self.assertEqual(row["pipeline_state"],"Exact repair packet prepared and independently audited")
                 self.assertEqual(row["historical_pipeline_state"],"Recorded TCG/count complete")
                 self.assertEqual(row["historical_tcg_state"],"Recorded complete")
                 self.assertEqual(row["scrape_series_availability"],"Pending guarded promotion terminal receipt")
@@ -528,7 +528,7 @@ class SnapshotTests(unittest.TestCase):
         ))
         self.assertEqual(
             rows[2]["pipeline_state"],
-            "Capacity remediation and exact repair refresh in progress",
+            "Exact repair packet prepared and independently audited",
         )
 
     def test_public_operations_overlay_rejects_ambiguous_shared_source_key(self):
@@ -579,9 +579,9 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],3)
         by_source={row["source"]:row for row in self.data["sources"]}
         expected={
-            "newsroompanama.com":"Capacity remediation and exact repair refresh in progress",
-            "eyeradio.org":"Capacity remediation and exact repair refresh in progress",
-            "eagle.co.ug":"Capacity remediation and exact repair refresh in progress",
+            "newsroompanama.com":"Exact repair packet prepared and independently audited",
+            "eyeradio.org":"Exact repair packet prepared and independently audited",
+            "eagle.co.ug":"Exact repair packet prepared and independently audited",
             "sibconline.com.sb":"Blocked — exact identity ledger unavailable",
             "7sur7.cd":"Parked — exact residual ledger unavailable",
             "liberianinvestigator.com":"Parked — exact residual ledger unavailable",
