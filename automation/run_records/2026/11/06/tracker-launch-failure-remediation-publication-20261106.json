@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "tracker_launch_failure_remediation_publication",
+  "completed_at_utc": "2026-11-07T03:49:00Z",
+  "automation_id": "priority-country-scraping-monitor",
+  "operational_state": "launch_failed_consumed_packet_closed_fix_verified_fresh_packet_next",
+  "source_scope": {
+    "sources": 3,
+    "exact_repair_candidates": 396,
+    "preserved_passes": 1240,
+    "preserved_verified_exclusions": 546,
+    "current_scope_count_contracts": 3,
+    "pending_contract_values_remain_null": true
+  },
+  "remediation": {
+    "ownership_aware_post_start_capacity_fix_published": true,
+    "code_commit": "ba3ed551623ce7ec991ca4e5f4a26ca1e9f3e252",
+    "focused_tests_primary": "96/96",
+    "focused_tests_independent": "96/96",
+    "test_provenance_commit": "d5ddb1146431b102480ef0ef9bd02dcfaa1f23da",
+    "consumed_packet_retry_or_resume_permitted": false,
+    "next_safe_unit": "build_and_independently_audit_fresh_immutable_packet"
+  },
+  "public_tracker": {
+    "space_commit": "f2935d9731803c0e0e0b43e355ecc65896faf6c0",
+    "snapshot_sha256": "df060f9950ce19eea53397c4c81f3683bfe76d60c056b691dbd5ad3fb19b8eaa",
+    "privacy_and_snapshot_tests_passed": 36,
+    "privacy_and_snapshot_tests_total": 36,
+    "space_page_http_status": 200,
+    "static_root_http_status": 200,
+    "snapshot_http_status": 200,
+    "remote_snapshot_byte_identical": true,
+    "comparison_space_changed": false
+  },
+  "boundary_effect": {
+    "source_evidence_changed": false,
+    "recorded_notion_boundary_changed": false,
+    "operational_through_changed": false,
+    "first_pass_verified_through_changed": false,
+    "strict_verified_through_changed": false,
+    "tcg_state_changed": false
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_data_or_urls_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "infrastructure_metrics_published": false,
+    "credentials_published": false,
+    "canonical_workbook_published": false,
+    "private_logs_or_notes_published": false
+  }
+}
