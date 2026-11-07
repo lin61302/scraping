@@ -1340,12 +1340,10 @@ def apply_public_operations(
         "sources": {},
     }
     source_overrides = operations.get("sources", {})
-    rows_by_key: dict[str, dict[str, Any]] = {}
+    rows_by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         key = count_series_key(row.get("project"), row.get("source"))
-        if key in rows_by_key:
-            raise ValueError(f"Duplicate exported source key: {key!r}")
-        rows_by_key[key] = row
+        rows_by_key[key].append(row)
         row["historical_pipeline_state"] = row["pipeline_state"]
         row["historical_tcg_state"] = row["tcg_record_state"]
         row["historical_tcg_through"] = row["tcg_record_through"]
@@ -1358,23 +1356,31 @@ def apply_public_operations(
     unknown = sorted(set(source_overrides) - set(rows_by_key))
     if unknown:
         raise ValueError(f"Public operations references unknown sources: {unknown}")
+    ambiguous = sorted(
+        key for key in source_overrides if len(rows_by_key[key]) != 1
+    )
+    if ambiguous:
+        raise ValueError(
+            f"Public operations references ambiguous operational source keys: {ambiguous}"
+        )
 
     count_contracts: dict[str, dict[str, Any]] = {}
     for key, operation in source_overrides.items():
-        row = rows_by_key[key]
-        row["pipeline_state"] = operation["current_stage"]
-        row["attention_state"] = operation["attention_state"]
-        row["next_action"] = operation["next_action"]
-        row["operational_state_source"] = "Latest scheduled operations"
+        for row in rows_by_key[key]:
+            row["pipeline_state"] = operation["current_stage"]
+            row["attention_state"] = operation["attention_state"]
+            row["next_action"] = operation["next_action"]
+            row["operational_state_source"] = "Latest scheduled operations"
         contract = operation["count_contract"]
         if contract is not None:
             count_contracts[key] = contract
-            row["scrape_series_availability"] = PUBLIC_SERIES_LABELS[
-                contract["scrape_series_status"]
-            ]
-            row["tcg_series_availability"] = PUBLIC_SERIES_LABELS[
-                contract["tcg_series_status"]
-            ]
+            for row in rows_by_key[key]:
+                row["scrape_series_availability"] = PUBLIC_SERIES_LABELS[
+                    contract["scrape_series_status"]
+                ]
+                row["tcg_series_availability"] = PUBLIC_SERIES_LABELS[
+                    contract["tcg_series_status"]
+                ]
 
     operation_summary = {
         "schema_version": operations.get("schema_version", 1),

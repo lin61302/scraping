@@ -499,6 +499,56 @@ class SnapshotTests(unittest.TestCase):
                 self.assertEqual(contract["scrape_series_status"],"pending_promotion_terminal_receipt")
                 self.assertEqual(contract["tcg_series_status"],"pending_tcg_receipt")
 
+    def test_public_operations_overlay_allows_unrelated_shared_source_rows(self):
+        operations=load_public_operations(ROOT/"operations_status.public.json")
+        source_key="MLP|newsroompanama.com"
+        operations={**operations,"sources":{source_key:operations["sources"][source_key]}}
+        rows=[{
+            "project":"MLP",
+            "source":source,
+            "country":country,
+            "pipeline_state":"Recorded TCG/count complete",
+            "attention_state":"On track",
+            "next_action":"Historical action",
+            "tcg_record_state":"Recorded complete",
+            "tcg_record_through":"2026-08-31",
+        } for country,source in (
+            ("INT","elpais.com"),
+            ("REG","elpais.com"),
+            ("PAN","newsroompanama.com"),
+        )]
+
+        contracts,summary=apply_public_operations(rows,{},operations)
+
+        self.assertEqual(summary["source_override_count"],1)
+        self.assertEqual(set(contracts),{source_key})
+        self.assertTrue(all(
+            row["operational_state_source"]=="Canonical tracker"
+            for row in rows[:2]
+        ))
+        self.assertEqual(
+            rows[2]["pipeline_state"],
+            "Capacity remediation and exact repair refresh in progress",
+        )
+
+    def test_public_operations_overlay_rejects_ambiguous_shared_source_key(self):
+        operations=load_public_operations(ROOT/"operations_status.public.json")
+        operation=operations["sources"]["MLP|newsroompanama.com"]
+        operations={**operations,"sources":{"MLP|elpais.com":operation}}
+        rows=[{
+            "project":"MLP",
+            "source":"elpais.com",
+            "country":country,
+            "pipeline_state":"Recorded TCG/count complete",
+            "attention_state":"On track",
+            "next_action":"Historical action",
+            "tcg_record_state":"Recorded complete",
+            "tcg_record_through":"2026-08-31",
+        } for country in ("INT","REG")]
+
+        with self.assertRaisesRegex(ValueError,"ambiguous operational source key"):
+            apply_public_operations(rows,{},operations)
+
     def test_ui_separates_operational_and_historical_state(self):
         html=(ROOT/"index.html").read_text(encoding="utf-8")
         app=(ROOT/"app.js").read_text(encoding="utf-8")
