@@ -466,7 +466,7 @@ class SnapshotTests(unittest.TestCase):
         for source in ("newsroompanama.com","eyeradio.org","eagle.co.ug"):
             with self.subTest(source=source):
                 row=by_source[source]
-                self.assertEqual(row["pipeline_state"],"Exact repair launch failed before source work; agent remediation in progress")
+                self.assertEqual(row["pipeline_state"],"Fresh exact repair packet prepared and independently audited; launch pending capacity")
                 self.assertEqual(row["historical_pipeline_state"],"Recorded TCG/count complete")
                 self.assertEqual(row["historical_tcg_state"],"Recorded complete")
                 self.assertEqual(row["scrape_series_availability"],"Pending guarded promotion terminal receipt")
@@ -476,7 +476,7 @@ class SnapshotTests(unittest.TestCase):
         for source in ("7sur7.cd","liberianinvestigator.com","247malawi.com","eluniverso.com","elcomercio.pe"):
             self.assertEqual(by_source[source]["pipeline_state"],"Parked — exact residual ledger unavailable")
         self.assertEqual(by_source["csmonitor.com"]["pipeline_state"],"First-pass complete; production promotion pending")
-        self.assertEqual(summary["latest_window"]["state"],"terminal_reconciled")
+        self.assertEqual(summary["latest_window"]["state"],"prepared_waiting_capacity")
         self.assertEqual(summary["source_override_count"],10)
         self.assertEqual(set(contracts),{
             "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug"
@@ -528,7 +528,7 @@ class SnapshotTests(unittest.TestCase):
         ))
         self.assertEqual(
             rows[2]["pipeline_state"],
-            "Exact repair launch failed before source work; agent remediation in progress",
+            "Fresh exact repair packet prepared and independently audited; launch pending capacity",
         )
 
     def test_public_operations_overlay_rejects_ambiguous_shared_source_key(self):
@@ -570,7 +570,7 @@ class SnapshotTests(unittest.TestCase):
 
     def test_release_exposes_latest_operations_without_advancing_verified_dates(self):
         self.assertEqual(self.data["meta"]["snapshot_version"],5)
-        self.assertEqual(self.data["operations"]["latest_window"]["state"],"terminal_reconciled")
+        self.assertEqual(self.data["operations"]["latest_window"]["state"],"prepared_waiting_capacity")
         self.assertFalse(self.data["operations"]["latest_window"]["work_started"])
         self.assertGreaterEqual(
             self.data["operations"]["generated_at_utc"],
@@ -579,9 +579,9 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],3)
         by_source={row["source"]:row for row in self.data["sources"]}
         expected={
-            "newsroompanama.com":"Exact repair launch failed before source work; agent remediation in progress",
-            "eyeradio.org":"Exact repair launch failed before source work; agent remediation in progress",
-            "eagle.co.ug":"Exact repair launch failed before source work; agent remediation in progress",
+            "newsroompanama.com":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
+            "eyeradio.org":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
+            "eagle.co.ug":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
             "sibconline.com.sb":"Blocked — exact identity ledger unavailable",
             "7sur7.cd":"Parked — exact residual ledger unavailable",
             "liberianinvestigator.com":"Parked — exact residual ledger unavailable",
