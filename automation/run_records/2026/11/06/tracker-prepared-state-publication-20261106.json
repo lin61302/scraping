@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "tracker_prepared_state_publication",
+  "completed_at_utc": "2026-11-07T00:44:45Z",
+  "automation_id": "priority-country-scraping-monitor",
+  "automation_status": "ACTIVE",
+  "automation_outcome": "updated_to_use_fresh_one_worker_recovery_packet",
+  "next_scheduled_window_local": "2026-11-06 22:15 America/New_York",
+  "scheduled_outcome_contract": "capacity_is_a_gate_and_each_run_must_advance_one_safe_workflow_unit",
+  "active_packet_state": "offline_prepared_independently_audited_unauthorized_unattempted_unlaunched",
+  "active_packet_scope": {
+    "sources": 3,
+    "exact_repair_candidates": 396,
+    "preserved_passes": 1240,
+    "verified_exclusions": 546,
+    "network_worker_ceiling": 1,
+    "browser_worker_ceiling": 0,
+    "production_writes": false
+  },
+  "packet_preparation_provenance_commit": "c0f41bee04d54419ebb2946816de50fd8c65766a",
+  "packet_audit_checks": {
+    "primary_passed": 682,
+    "primary_total": 682,
+    "manifest_subaudit_passed": 498,
+    "manifest_subaudit_total": 498,
+    "blockers": 0
+  },
+  "public_tracker": {
+    "space_commit": "1f33fed496598e7603a11f316225d5eb77929030",
+    "snapshot_sha256": "ceff064aba3a99806de40b51f5012840147885baad9d29cfee58fb73acbff665",
+    "source_count": 653,
+    "country_count": 71,
+    "country_group_count": 73,
+    "current_scope_count_contracts": 3,
+    "pending_contract_values_are_null": true,
+    "remote_snapshot_byte_identical": true,
+    "space_page_http_status": 200,
+    "static_root_http_status": 200,
+    "snapshot_http_status": 200,
+    "comparison_space_changed": false
+  },
+  "verification": {
+    "snapshot_validation": "passed",
+    "privacy_and_snapshot_tests_passed": 36,
+    "privacy_and_snapshot_tests_total": 36,
+    "javascript_syntax_check": "passed",
+    "test_source_prepublication_commit": "fb7aca3d66209a91bdb0eae406c70148fad131bf"
+  },
+  "source_evidence_changed": false,
+  "verified_dates_advanced": false,
+  "scraping_launched": false,
+  "raw_identities_published": false,
+  "raw_article_data_published": false,
+  "private_runtime_evidence_published": false
+}
