@@ -478,11 +478,14 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["csmonitor.com"]["pipeline_state"],"First-pass complete; production promotion pending")
         self.assertEqual(by_source["csmonitor.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["csmonitor.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
+        self.assertEqual(by_source["asiatimes.com"]["pipeline_state"],"First-pass complete; exact guarded promotion pending")
+        self.assertEqual(by_source["asiatimes.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
+        self.assertEqual(by_source["asiatimes.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
-        self.assertEqual(summary["source_override_count"],10)
+        self.assertEqual(summary["source_override_count"],11)
         self.assertEqual(set(contracts),{
             "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug",
-            "MLP|csmonitor.com",
+            "MLP|csmonitor.com","MLP|asiatimes.com",
         })
 
     def test_current_scope_contracts_use_explicit_null_not_zero(self):
@@ -492,7 +495,7 @@ class SnapshotTests(unittest.TestCase):
             for operation in operations["sources"].values()
             if operation["count_contract"] is not None
         ]
-        self.assertEqual(len(contracts),4)
+        self.assertEqual(len(contracts),5)
         for contract in contracts:
             with self.subTest(scope=contract["scope_label"], start=contract["range_start"]):
                 self.assertEqual(contract["publication_date_field"],"date_publish")
@@ -579,7 +582,7 @@ class SnapshotTests(unittest.TestCase):
             self.data["operations"]["generated_at_utc"],
             self.data["operations"]["latest_window"]["evidence_through_utc"],
         )
-        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],4)
+        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],5)
         by_source={row["source"]:row for row in self.data["sources"]}
         expected={
             "newsroompanama.com":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
@@ -592,6 +595,7 @@ class SnapshotTests(unittest.TestCase):
             "eluniverso.com":"Parked — exact residual ledger unavailable",
             "elcomercio.pe":"Parked — exact residual ledger unavailable",
             "csmonitor.com":"First-pass complete; production promotion pending",
+            "asiatimes.com":"First-pass complete; exact guarded promotion pending",
         }
         for source,current_stage in expected.items():
             with self.subTest(source=source):
