@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-07 22:15 America/New_York",
+  "completed_at_utc": "2026-11-08T03:25:26Z",
+  "capacity_result": {
+    "status": "blocked",
+    "launch_allowed": false,
+    "blocking_reason_codes": [
+      "load_per_cpu_blocked",
+      "swap_pressure_blocked"
+    ],
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 0,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false
+  },
+  "offline_advancement": {
+    "source": "MLP|asiatimes.com",
+    "result": "monthly_count_contract_prepared_and_published",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-08-01",
+    "range_end": "2026-09-30",
+    "months": [
+      "2026-08",
+      "2026-09"
+    ],
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_complete_status": "pending_tcg_receipt",
+    "pending_values_are_null": true,
+    "independent_audit": "46/46 approved",
+    "canonical_boundaries_changed": false
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 passed",
+    "test_publication_commit": "56d5e0654e4f8bc275c0dd829cb44e483a1db24b",
+    "zungru_space_commit": "d6b9d8ea5b00e743abc689f0d5b4697e5dbae579",
+    "snapshot_sha256": "4acdee170e2a34e6b5c12f4f655075ce7973c59590652e8d16d312efea7ee707",
+    "space_runtime": "RUNNING",
+    "remote_snapshot_byte_identical": true,
+    "comparison_space_unchanged": true
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the active recovery2 packet and launch once only if every gate passes; otherwise complete another bounded offline advancement."
+}
