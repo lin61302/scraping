@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-08 14:15 America/New_York",
+  "completed_at_utc": "2026-11-08T19:26:50Z",
+  "capacity_result": {
+    "status": "blocked",
+    "launch_allowed": false,
+    "blocking_reason_codes": [
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 0,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false
+  },
+  "offline_advancement": {
+    "source": "MLEED|timesca.com",
+    "result": "monthly_count_contract_prepared_and_published",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-06-02",
+    "range_end": "2026-09-30",
+    "months": [
+      "2026-06",
+      "2026-07",
+      "2026-08",
+      "2026-09"
+    ],
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_complete_status": "pending_tcg_receipt",
+    "pending_values_are_null": true,
+    "independent_audit": "46/46 approved",
+    "canonical_boundaries_changed": false
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 passed",
+    "test_publication_commit": "1173beb46c7721d95ee724a6bc1952f3a78f5b2c",
+    "zungru_space_commit": "5cc02ed10e815f9fc9d48b6febb5af1c0e8749cf",
+    "snapshot_sha256": "6c6ec7659cfe849302d97acef3c8bcd7b51aaa8c627726ae224b4ebc6fa3895e",
+    "space_runtime": "RUNNING",
+    "remote_snapshot_byte_identical": true,
+    "comparison_space_unchanged": true
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the active recovery2 packet and launch once only if every gate passes; otherwise complete another bounded offline advancement."
+}
