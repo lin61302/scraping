@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-08 22:15 America/New_York",
+  "completed_at_utc": "2026-11-09T03:29:34Z",
+  "capacity_result": {
+    "status": "blocked",
+    "launch_allowed": false,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked",
+      "swap_pressure_blocked"
+    ],
+    "reduced_reason_codes": [
+      "memory_available_bytes_reduced"
+    ],
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false
+  },
+  "offline_advancement": {
+    "source": "MLEED|noticiasdelatierra.com",
+    "result": "monthly_count_contract_prepared_and_published",
+    "terminal_accounting": "704=704+0+0+0",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-06-02",
+    "range_end": "2026-09-30",
+    "months": [
+      "2026-06",
+      "2026-07",
+      "2026-08",
+      "2026-09"
+    ],
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_complete_status": "pending_tcg_receipt",
+    "pending_values_are_null": true,
+    "independent_audit": "46/46 approved",
+    "canonical_boundaries_changed": false
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 passed",
+    "release_audit": "24/24 approved",
+    "test_publication_commit": "d29b515e861f62105d64c9ec7ccf985b726af9b5",
+    "zungru_space_commit": "d19114c122d5b0132a3662a112504ab5368eb2c5",
+    "snapshot_sha256": "c3b46488d3d77c7bb49a264fb57e0aaa139e84d5e323865e6d2bc3c3beea7195",
+    "space_runtime": "RUNNING",
+    "remote_snapshot_byte_identical": true,
+    "comparison_space_unchanged": true
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the active recovery2 packet and launch once only if every gate passes; otherwise complete another bounded offline advancement."
+}
