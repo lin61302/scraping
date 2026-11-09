@@ -197,6 +197,8 @@ def create_private_json(path: Path, value: object) -> str:
 
 
 def parse_publish_date(value: object) -> datetime:
+    if isinstance(value, datetime):
+        return value
     require(isinstance(value, str) and bool(value.strip()), "date_publish_required")
     text = value.strip().replace("Z", "+00:00")
     try:
