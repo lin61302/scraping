@@ -1,0 +1,29 @@
+{
+  "code_publication_before_focused_tests": true,
+  "completed_at_utc": "2026-11-09T20:01:00Z",
+  "database_access_performed": false,
+  "final_code_commit": "aa6eb28ddd19213a9fd93909780f9da79ed97fde",
+  "focused_test_sha256": "480b6228f0591e4b70aa9c1aa34ea1c191106ce3fc27e25be5e07c58aa7abe3d",
+  "independent_repeat": {
+    "failed": 0,
+    "passed": 50,
+    "result": "approved"
+  },
+  "kind": "moscow_exact_promotion_operator_test_provenance",
+  "network_or_source_access_performed": false,
+  "operator_sha256": "91cc9b335f81b9126fac2fecf49fcb315493b88c6fdbcd22eeabcc6c274fed16",
+  "primary_final": {
+    "failed": 0,
+    "passed": 50,
+    "result": "passed"
+  },
+  "primary_initial": {
+    "failed": 8,
+    "passed": 42,
+    "result": "failed_closed"
+  },
+  "production_writes": false,
+  "schema_version": 1,
+  "source_key": "MLP|themoscowtimes.com",
+  "status": "offline_operator_tests_approved"
+}
