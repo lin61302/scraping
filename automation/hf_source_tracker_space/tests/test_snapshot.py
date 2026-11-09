@@ -481,7 +481,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["asiatimes.com"]["pipeline_state"],"First-pass complete; exact guarded promotion pending")
         self.assertEqual(by_source["asiatimes.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["asiatimes.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
-        self.assertEqual(by_source["themoscowtimes.com"]["pipeline_state"],"First-pass complete; exact guarded promotion pending")
+        self.assertEqual(by_source["themoscowtimes.com"]["pipeline_state"],"Exact promotion preparation sealed; guarded operator and backup pending")
         self.assertEqual(by_source["themoscowtimes.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["themoscowtimes.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(by_source["timesca.com"]["pipeline_state"],"First-pass complete; exact guarded promotion pending")
@@ -606,7 +606,7 @@ class SnapshotTests(unittest.TestCase):
             "elcomercio.pe":"Parked — exact residual ledger unavailable",
             "csmonitor.com":"First-pass complete; production promotion pending",
             "asiatimes.com":"First-pass complete; exact guarded promotion pending",
-            "themoscowtimes.com":"First-pass complete; exact guarded promotion pending",
+            "themoscowtimes.com":"Exact promotion preparation sealed; guarded operator and backup pending",
             "timesca.com":"First-pass complete; exact guarded promotion pending",
             "noticiasdelatierra.com":"First-pass complete; exact guarded promotion pending",
         }
