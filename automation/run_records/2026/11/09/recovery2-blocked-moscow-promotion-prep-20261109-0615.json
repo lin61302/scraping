@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-09 06:15 America/New_York",
+  "completed_at_utc": "2026-11-09T11:27:25Z",
+  "capacity_result": {
+    "status": "blocked",
+    "launch_allowed": false,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked",
+      "swap_pressure_blocked"
+    ],
+    "reduced_reason_codes": [
+      "memory_available_bytes_reduced",
+      "memory_available_percent_reduced"
+    ],
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false
+  },
+  "offline_advancement": {
+    "source": "MLP|themoscowtimes.com",
+    "result": "exact_write_disabled_promotion_preparation_sealed_and_published",
+    "terminal_accounting": "430=425+5+0+0",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-08-01",
+    "range_end": "2026-09-30",
+    "verified_payload_month_ledger": [
+      [
+        "2026-08",
+        212
+      ],
+      [
+        "2026-09",
+        218
+      ]
+    ],
+    "execution_allowed": false,
+    "production_write_performed": false,
+    "public_pending_values_are_null": true,
+    "preparation_audit": "55/55 approved",
+    "seal_audit": "28/28 approved",
+    "canonical_boundaries_changed": false
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 passed",
+    "release_audit": "30/30 approved",
+    "test_publication_commit": "d12009a87c8228e096ae962aaae82b38c7c6b8a2",
+    "zungru_space_commit": "822491cac3e6eaf16fe0d8757ba1bf4d8fa63f44",
+    "snapshot_sha256": "ce6ac3328ed86c82d5bde7ac02da0038464ade8d329b4dae7fc29fbc0bf7d828",
+    "space_runtime": "RUNNING",
+    "remote_snapshot_byte_identical": true,
+    "comparison_space_unchanged": true
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the active recovery2 packet and launch once only if every gate passes; if blocked, advance the separately published guarded Moscow Times promotion operator or another bounded source unit."
+}
