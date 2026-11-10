@@ -103,12 +103,14 @@ PUBLIC_OPERATION_STATES = {
 PUBLIC_ATTENTION_STATES = {"Active", "Blocked", "On track", "Ready", "Review"}
 PUBLIC_SERIES_STATUSES = {
     "pending_promotion_terminal_receipt",
+    "pending_exact_terminal_month_ledger",
     "pending_tcg_receipt",
     "available",
     "not_published",
 }
 PUBLIC_SERIES_LABELS = {
     "pending_promotion_terminal_receipt": "Pending guarded promotion terminal receipt",
+    "pending_exact_terminal_month_ledger": "Pending exact promoted month ledger",
     "pending_tcg_receipt": "Pending current-scope TCG receipt",
     "available": "Available",
     "not_published": "Not published",
