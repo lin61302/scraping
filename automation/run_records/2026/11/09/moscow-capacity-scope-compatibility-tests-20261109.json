@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "sanitized_immutable_test_provenance",
+  "event": "terminal",
+  "occurred_at_utc": "2026-11-10T03:26:00Z",
+  "outcome": "passed",
+  "code_commit": "9424f410e343be3e88af1728331f6362c1e779f3",
+  "code_sha256": {
+    "host_capacity_guard": "b56c5864b5845a32a24f1efaf5ac412f42ba7b2a43b477d6b31df67b2ea13353",
+    "moscow_promotion_operator": "cc43b5edbf5c6109727cee250c7929264962905be0bb8cf5ef160bd44b52d0d7"
+  },
+  "test_sha256": {
+    "host_capacity_guard": "0f2bfd23f3021e91008e69e01031f36b26673975d6bb3231813d9a49f7790b96",
+    "moscow_promotion_operator": "87776f8c2a2b0fd8ed9e95c3b6d25312c6d9ef227f239bd3468ecdb1daac9d23"
+  },
+  "primary": {
+    "passed": 152,
+    "failed": 0,
+    "evidence_sha256": "d920dca332ef21f36c4594e1b2c8f29d9fac0df3d41236698076566798c2cb46"
+  },
+  "independent": {
+    "passed": 152,
+    "failed": 0,
+    "evidence_sha256": "16aac226c956adc61ecbccfe210b1ccf2ad53a123ca92dc99a5553b1b75c44b2"
+  },
+  "scope": {
+    "capacity_scope_privacy_safe": true,
+    "guard_decision_semantics_unchanged": true,
+    "moscow_scope_binding_compatible": true,
+    "production_database_accessed": false,
+    "network_accessed": false,
+    "source_accessed": false,
+    "browser_started": false,
+    "production_write_attempted": false
+  }
+}
