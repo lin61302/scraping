@@ -18,7 +18,9 @@ from ops.host_capacity_guard import (  # noqa: E402
     Thresholds,
     _parse_macos_cpu_idle,
     _read_macos_cpu_idle,
+    build_capacity_scope,
     evaluate_capacity,
+    main,
     parser,
     thresholds_from_args,
 )
@@ -367,6 +369,88 @@ CPU usage: 16.77% user, 19.34% sys, 63.88% idle
                     Thresholds(
                         darwin_high_load_cpu_idle_safe_percent=value,
                     ).validate()
+
+    def test_capacity_scope_exact_five_six_six_and_no_raw_values(self):
+        roots = [Path(f"/private/runtime/root-{index}") for index in range(5)]
+        scraper = [f"private-scraper-{index}" for index in range(6)]
+        browser = [f"private-browser-{index}" for index in range(6)]
+        scope = build_capacity_scope(roots[:1], roots[1:], scraper, browser)
+        self.assertEqual(scope["root_count"], 5)
+        self.assertEqual(scope["scraper_pattern_count"], 6)
+        self.assertEqual(scope["browser_pattern_count"], 6)
+        for key in ("root_set_sha256", "scraper_pattern_set_sha256",
+                    "browser_pattern_set_sha256"):
+            value = scope[key]
+            self.assertIsInstance(value, str)
+            self.assertEqual(len(value), 64)
+            self.assertTrue(all(character in "0123456789abcdef" for character in value))
+        rendered = json.dumps(scope, sort_keys=True)
+        for raw_value in [*(str(item) for item in roots), *scraper, *browser]:
+            self.assertNotIn(raw_value, rendered)
+
+    def test_capacity_scope_is_order_independent_and_uses_effective_sets(self):
+        roots = [Path(f"/private/runtime/root-{index}") for index in range(5)]
+        scraper = [f"scraper-{index}" for index in range(6)]
+        browser = [f"browser-{index}" for index in range(6)]
+        expected = build_capacity_scope(roots[:1], roots[1:], scraper, browser)
+        actual = build_capacity_scope(
+            list(reversed(roots[:1])), list(reversed(roots[1:])),
+            list(reversed(scraper)) + [scraper[0].upper()],
+            list(reversed(browser)) + [browser[0].upper()],
+        )
+        self.assertEqual(actual, expected)
+
+    def test_capacity_scope_changed_component_changes_only_its_hash(self):
+        roots = [Path(f"/private/runtime/root-{index}") for index in range(5)]
+        scraper = [f"scraper-{index}" for index in range(6)]
+        browser = [f"browser-{index}" for index in range(6)]
+        baseline = build_capacity_scope(roots[:1], roots[1:], scraper, browser)
+        changed_root = build_capacity_scope(
+            roots[:1], [*roots[1:-1], Path("/private/runtime/root-new")], scraper, browser,
+        )
+        changed_scraper = build_capacity_scope(
+            roots[:1], roots[1:], [*scraper[:-1], "scraper-new"], browser,
+        )
+        changed_browser = build_capacity_scope(
+            roots[:1], roots[1:], scraper, [*browser[:-1], "browser-new"],
+        )
+        self.assertNotEqual(changed_root["root_set_sha256"], baseline["root_set_sha256"])
+        self.assertEqual(changed_root["scraper_pattern_set_sha256"], baseline["scraper_pattern_set_sha256"])
+        self.assertEqual(changed_root["browser_pattern_set_sha256"], baseline["browser_pattern_set_sha256"])
+        self.assertNotEqual(changed_scraper["scraper_pattern_set_sha256"], baseline["scraper_pattern_set_sha256"])
+        self.assertEqual(changed_scraper["root_set_sha256"], baseline["root_set_sha256"])
+        self.assertEqual(changed_scraper["browser_pattern_set_sha256"], baseline["browser_pattern_set_sha256"])
+        self.assertNotEqual(changed_browser["browser_pattern_set_sha256"], baseline["browser_pattern_set_sha256"])
+        self.assertEqual(changed_browser["root_set_sha256"], baseline["root_set_sha256"])
+        self.assertEqual(changed_browser["scraper_pattern_set_sha256"], baseline["scraper_pattern_set_sha256"])
+
+    def test_cli_receipt_adds_privacy_safe_scope_without_changing_decision(self):
+        arguments = [
+            "--log-root", "/private/runtime/logs",
+            *sum((["--output-root", f"/private/runtime/root-{index}"]
+                  for index in range(4)), []),
+            *sum((["--scrape-pattern", f"private-scraper-{index}"]
+                  for index in range(6)), []),
+            *sum((["--browser-pattern", f"private-browser-{index}"]
+                  for index in range(6)), []),
+        ]
+        with patch("ops.host_capacity_guard.collect_metrics", return_value=healthy()), \
+                patch("builtins.print") as emit:
+            exit_code = main(arguments)
+        self.assertEqual(exit_code, 0)
+        receipt = json.loads(emit.call_args.args[0])
+        self.assertEqual(receipt["status"], "green")
+        self.assertTrue(receipt["launch_allowed"])
+        self.assertEqual(receipt["recommended_limits"], {
+            "network_workers": 4, "browser_workers": 1,
+        })
+        self.assertEqual(receipt["scope"]["root_count"], 5)
+        self.assertEqual(receipt["scope"]["scraper_pattern_count"], 6)
+        self.assertEqual(receipt["scope"]["browser_pattern_count"], 6)
+        rendered = json.dumps(receipt, sort_keys=True)
+        self.assertNotIn("/private/runtime", rendered)
+        self.assertNotIn("private-scraper", rendered)
+        self.assertNotIn("private-browser", rendered)
 
 
 if __name__ == "__main__":

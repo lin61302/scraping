@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from ops.host_capacity_guard import build_capacity_scope
 from ops import promote_moscow_exact_20261109 as operator
 
 
@@ -76,14 +77,12 @@ def execution_fixture(tmp_path: Path, operator_sha: str):
     scheduled_local = current.astimezone(operator.ZoneInfo("America/New_York")).replace(
         second=0, microsecond=0
     ).strftime("%Y-%m-%d %H:%M")
-    capacity_scope = {
-        "root_count": 5,
-        "root_set_sha256": "1" * 64,
-        "scraper_pattern_count": 6,
-        "scraper_pattern_set_sha256": "2" * 64,
-        "browser_pattern_count": 6,
-        "browser_pattern_set_sha256": "3" * 64,
-    }
+    capacity_scope = build_capacity_scope(
+        [tmp_path / "scope-root-0"],
+        [tmp_path / f"scope-root-{index}" for index in range(1, 5)],
+        [f"scraper-{index}" for index in range(6)],
+        [f"browser-{index}" for index in range(6)],
+    )
     private_json(capacity_receipt, {
         "kind": "host_capacity_guard",
         "generated_at": current.isoformat().replace("+00:00", "Z"),
@@ -802,6 +801,37 @@ def test_execution_documents_reject_wrong_capacity_scope(tmp_path):
         packet, authorization, packet_value, refresh_review=True
     )
     with pytest.raises(operator.PromotionError, match="capacity_scope_binding_mismatch"):
+        operator.validate_execution_documents(
+            packet, authorization, operator_sha, expected_inputs,
+            now=datetime.now(timezone.utc),
+        )
+
+
+def test_execution_documents_reject_missing_guard_scope(tmp_path):
+    operator_sha = "b" * 64
+    packet, authorization, expected_inputs, packet_value = execution_fixture(tmp_path, operator_sha)
+    capacity = Path(packet_value["paths"]["capacity_receipt"])
+    capacity_value = json.loads(capacity.read_text())
+    capacity_value.pop("scope")
+    capacity.unlink()
+    capacity.with_name(capacity.name + ".sha256").unlink()
+    private_json(capacity, capacity_value)
+    rebind_packet_and_authorization(
+        packet, authorization, packet_value, refresh_review=True
+    )
+    with pytest.raises(operator.PromotionError, match="capacity_scope_binding_mismatch"):
+        operator.validate_execution_documents(
+            packet, authorization, operator_sha, expected_inputs,
+            now=datetime.now(timezone.utc),
+        )
+
+
+def test_execution_documents_reject_non_hex_capacity_scope_digest(tmp_path):
+    operator_sha = "b" * 64
+    packet, authorization, expected_inputs, packet_value = execution_fixture(tmp_path, operator_sha)
+    packet_value["capacity_scope"]["root_set_sha256"] = "g" * 64
+    rebind_packet_and_authorization(packet, authorization, packet_value)
+    with pytest.raises(operator.PromotionError, match="capacity_scope_hash_invalid"):
         operator.validate_execution_documents(
             packet, authorization, operator_sha, expected_inputs,
             now=datetime.now(timezone.utc),

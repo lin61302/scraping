@@ -865,7 +865,9 @@ def validate_execution_documents(packet_path: Path, authorization_path: Path,
     for key in ("root_set_sha256", "scraper_pattern_set_sha256",
                 "browser_pattern_set_sha256"):
         require(isinstance(capacity_scope.get(key), str) and
-                len(str(capacity_scope[key])) == 64,
+                len(str(capacity_scope[key])) == 64 and
+                all(character in "0123456789abcdef"
+                    for character in str(capacity_scope[key])),
                 "capacity_scope_hash_invalid")
     capacity_scope_sha = sha256_bytes(canonical_json_bytes(capacity_scope))
     require(capacity.get("scope") == capacity_scope and

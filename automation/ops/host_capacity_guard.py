@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -640,6 +641,30 @@ def _normalized_roots(paths: Sequence[Path]) -> list[Path]:
     return result
 
 
+def _canonical_set_sha256(values: Iterable[str]) -> str:
+    payload = json.dumps(
+        sorted(set(values)), ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def build_capacity_scope(log_roots: Sequence[Path], output_roots: Sequence[Path],
+                         scrape_patterns: Sequence[str],
+                         browser_patterns: Sequence[str]) -> dict[str, object]:
+    """Return a privacy-safe binding for the exact effective guard scope."""
+    roots = [str(item) for item in _normalized_roots([*log_roots, *output_roots])]
+    scraper_terms = sorted({item.casefold() for item in scrape_patterns if item})
+    browser_terms = sorted({item.casefold() for item in browser_patterns if item})
+    return {
+        "root_count": len(roots),
+        "root_set_sha256": _canonical_set_sha256(roots),
+        "scraper_pattern_count": len(scraper_terms),
+        "scraper_pattern_set_sha256": _canonical_set_sha256(scraper_terms),
+        "browser_pattern_count": len(browser_terms),
+        "browser_pattern_set_sha256": _canonical_set_sha256(browser_terms),
+    }
+
+
 def _is_log_file(path: Path) -> bool:
     folded = path.name.casefold()
     return path.suffix.casefold() in LOG_SUFFIXES or "log" in folded
@@ -875,6 +900,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     workspace_root = automation_root.parent
     log_roots = args.log_root if args.log_root is not None else [automation_root / "var"]
     output_roots = args.output_root if args.output_root is not None else [workspace_root / "outputs"]
+    scrape_patterns = args.scrape_pattern or DEFAULT_SCRAPE_PATTERNS
+    browser_patterns = args.browser_pattern or DEFAULT_BROWSER_PATTERNS
     limits = thresholds_from_args(args)
     try:
         limits.validate()
@@ -884,10 +911,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.filesystem_path,
         log_roots,
         output_roots,
-        args.scrape_pattern or DEFAULT_SCRAPE_PATTERNS,
-        args.browser_pattern or DEFAULT_BROWSER_PATTERNS,
+        scrape_patterns,
+        browser_patterns,
     )
     report = evaluate_capacity(metrics, limits, include_paths=args.include_paths)
+    report["scope"] = build_capacity_scope(
+        log_roots, output_roots, scrape_patterns, browser_patterns,
+    )
     print(json.dumps(report, indent=2 if args.pretty else None, sort_keys=True))
     return 0 if args.always_zero else EXIT_CODES[str(report["status"])]
 
