@@ -1,0 +1,66 @@
+{
+  "automation_id": "priority-country-scraping-monitor",
+  "capacity_result": {
+    "attempt_marker_created": false,
+    "authorization_created": false,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "launch_allowed": false,
+    "launch_run": false,
+    "matching_browser_processes": 1,
+    "matching_scraper_processes": 0,
+    "preexecution_cli_correction_host_inspection_run": false,
+    "preexecution_cli_correction_preserved": true,
+    "preflight_run": false,
+    "reduced_reason_codes": [
+      "swap_used_percent_reduced"
+    ],
+    "status": "blocked",
+    "valid_guard_count": 1
+  },
+  "completed_at_utc": "2026-11-10T11:26:00Z",
+  "offline_advancement": {
+    "canonical_boundaries_changed": false,
+    "canonical_guarded_promotion_and_postwrite_complete": true,
+    "canonical_terminal_accounting": "6=6+0+0+0",
+    "complete_terminal_month_ledger_available": false,
+    "database_access_performed": false,
+    "independent_contract_audit": "54/54 approved",
+    "production_write_performed_by_this_unit": false,
+    "public_pending_values_are_null": true,
+    "publication_date_field": "date_publish",
+    "range_end": "2026-09-30",
+    "range_start": "2026-06-02",
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "scraped_promoted_status": "pending_exact_terminal_month_ledger",
+    "source": "MLEED|disasterdisplacement.org",
+    "tcg_status": "pending_tcg_receipt"
+  },
+  "privacy": {
+    "article_urls_or_data_published": false,
+    "canonical_workbook_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "raw_identities_published": false
+  },
+  "record_kind": "sanitized_scheduled_advancement",
+  "scheduled_window_local": "2026-11-10 06:15 America/New_York",
+  "schema_version": 1,
+  "verification": {
+    "comparison_space_unchanged": true,
+    "current_scope_contract_count": 9,
+    "postpublication_audit": "12/12 approved",
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audit": "24/24 approved",
+    "remote_snapshot_byte_identical": true,
+    "snapshot_sha256": "22696716294e2e942d5404a70be5fb0fec40b1fb238347225bc81ea607223d80",
+    "space_runtime": "RUNNING",
+    "source_override_count": 15,
+    "tracker_schema_and_test_commit": "7cfafdb39e44fc8cce21b31a212ef25c45ec5db5",
+    "zungru_space_commit": "b68a10d63416479123385876b48bb77e75a4d7f2"
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the untouched recovery2 scraping packet and launch once only if every gate passes; if blocked, prepare the next canonical-only terminal count contract without running a second guard or ending on verification alone."
+}
