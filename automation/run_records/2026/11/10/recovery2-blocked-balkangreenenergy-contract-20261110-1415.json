@@ -1,0 +1,72 @@
+{
+  "automation_id": "priority-country-scraping-monitor",
+  "capacity_result": {
+    "attempt_marker_created": false,
+    "authorization_created": false,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked",
+      "darwin_cpu_idle_percent_blocked"
+    ],
+    "launch_allowed": false,
+    "launch_run": false,
+    "matching_browser_processes": 1,
+    "matching_scraper_processes": 0,
+    "preflight_run": false,
+    "reduced_reason_codes": [
+      "swap_used_percent_reduced"
+    ],
+    "status": "blocked",
+    "valid_guard_count": 1
+  },
+  "completed_at_utc": "2026-11-10T19:40:21Z",
+  "offline_advancement": {
+    "canonical_boundaries_changed": false,
+    "canonical_guarded_promotion_patchtools_english_and_cliff_complete": true,
+    "canonical_terminal_accounting": "345=256+89",
+    "complete_terminal_month_ledger_available": false,
+    "database_access_performed": false,
+    "independent_contract_audit": "54/54 approved",
+    "production_write_performed_by_this_unit": false,
+    "public_pending_values_are_null": true,
+    "publication_date_field": "date_publish",
+    "range_end": "2026-09-30",
+    "range_start": "2026-06-02",
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "scraped_promoted_status": "pending_exact_terminal_month_ledger",
+    "source": "MLEED|balkangreenenergynews.com",
+    "tcg_status": "pending_tcg_receipt"
+  },
+  "publication_remediation": {
+    "changed_tracker_test_executed_before_publication": false,
+    "initial_publisher_validation_result": "failed_before_commit",
+    "reason": "privacy_safe_archive_omits_private_fixture_inputs",
+    "recovery": "independently_audited_exact_archive_runnable_test_selection",
+    "runnable_archive_tests": "453/453 passed",
+    "tracker_test_commit": "e3f41f3c470ceff372176d86af9953e10a377e82"
+  },
+  "privacy": {
+    "article_urls_or_data_published": false,
+    "canonical_workbook_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "raw_identities_published": false
+  },
+  "record_kind": "sanitized_scheduled_advancement",
+  "scheduled_window_local": "2026-11-10 14:15 America/New_York",
+  "schema_version": 1,
+  "verification": {
+    "comparison_space_unchanged": true,
+    "current_scope_contract_count": 10,
+    "postpublication_audit": "30/30 approved",
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audit": "32/32 approved",
+    "remote_snapshot_byte_identical": true,
+    "snapshot_sha256": "bd0040c35622d8712ba4147a1f25d35a3cc898d460881f7e66ec747aeb7fec3d",
+    "source_override_count": 16,
+    "space_runtime": "RUNNING",
+    "zungru_space_commit": "22c000ac45e49f48d1ee6043f5021a99ebab069e"
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the untouched recovery2 scraping packet and launch once only if every gate passes; if blocked, prepare the next canonical-only terminal count contract without running a second guard or ending on verification alone."
+}
