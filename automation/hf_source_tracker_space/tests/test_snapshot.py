@@ -496,14 +496,18 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["balkangreenenergynews.com"]["pipeline_state"],"Patchtools and CLiFF complete; exact promoted month ledger pending")
         self.assertEqual(by_source["balkangreenenergynews.com"]["scrape_series_availability"],"Pending exact promoted month ledger")
         self.assertEqual(by_source["balkangreenenergynews.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
+        self.assertEqual(by_source["watchers.news"]["pipeline_state"],"Patchtools and CLiFF complete; exact promoted month ledger pending")
+        self.assertEqual(by_source["watchers.news"]["scrape_series_availability"],"Pending exact promoted month ledger")
+        self.assertEqual(by_source["watchers.news"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
-        self.assertEqual(summary["source_override_count"],16)
+        self.assertEqual(summary["source_override_count"],17)
         self.assertEqual(set(contracts),{
             "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug",
             "MLP|csmonitor.com","MLP|asiatimes.com","MLP|themoscowtimes.com",
             "MLEED|timesca.com","MLEED|noticiasdelatierra.com",
             "MLEED|disasterdisplacement.org",
             "MLEED|balkangreenenergynews.com",
+            "MLEED|watchers.news",
         })
 
     def test_current_scope_contracts_use_explicit_null_not_zero(self):
@@ -513,7 +517,7 @@ class SnapshotTests(unittest.TestCase):
             for source_key,operation in operations["sources"].items()
             if operation["count_contract"] is not None
         }
-        self.assertEqual(len(contracts),10)
+        self.assertEqual(len(contracts),11)
         for source_key,contract in contracts.items():
             with self.subTest(source=source_key, scope=contract["scope_label"], start=contract["range_start"]):
                 self.assertEqual(contract["publication_date_field"],"date_publish")
@@ -525,6 +529,7 @@ class SnapshotTests(unittest.TestCase):
                     if source_key in {
                         "MLEED|disasterdisplacement.org",
                         "MLEED|balkangreenenergynews.com",
+                        "MLEED|watchers.news",
                     }
                     else "pending_promotion_terminal_receipt"
                 )
@@ -608,7 +613,7 @@ class SnapshotTests(unittest.TestCase):
             self.data["operations"]["generated_at_utc"],
             self.data["operations"]["latest_window"]["evidence_through_utc"],
         )
-        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],10)
+        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],11)
         by_source={row["source"]:row for row in self.data["sources"]}
         expected={
             "newsroompanama.com":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
@@ -627,6 +632,7 @@ class SnapshotTests(unittest.TestCase):
             "noticiasdelatierra.com":"First-pass complete; exact guarded promotion pending",
             "disasterdisplacement.org":"Patchtools complete",
             "balkangreenenergynews.com":"Patchtools and CLiFF complete; exact promoted month ledger pending",
+            "watchers.news":"Patchtools and CLiFF complete; exact promoted month ledger pending",
         }
         for source,current_stage in expected.items():
             with self.subTest(source=source):
