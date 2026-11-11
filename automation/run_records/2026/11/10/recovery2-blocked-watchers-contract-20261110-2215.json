@@ -1,0 +1,71 @@
+{
+  "automation_id": "priority-country-scraping-monitor",
+  "capacity_result": {
+    "attempt_marker_created": false,
+    "authorization_created": false,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "launch_allowed": false,
+    "launch_run": false,
+    "matching_browser_processes": 1,
+    "matching_scraper_processes": 0,
+    "preflight_run": false,
+    "reduced_reason_codes": [
+      "swap_used_percent_reduced"
+    ],
+    "status": "blocked",
+    "valid_guard_count": 1
+  },
+  "completed_at_utc": "2026-11-11T03:32:50Z",
+  "offline_advancement": {
+    "canonical_boundaries_changed": false,
+    "canonical_terminal_accounting": "467=377+90=462+5",
+    "complete_terminal_month_ledger_available": false,
+    "database_access_performed": false,
+    "guarded_downstream_work_complete_for_touched_rows": 462,
+    "independent_contract_audit": "60/60 approved",
+    "production_write_performed_by_this_unit": false,
+    "public_pending_values_are_null": true,
+    "publication_date_field": "date_publish",
+    "range_end": "2026-09-30",
+    "range_start": "2026-06-02",
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "scraped_promoted_status": "pending_exact_terminal_month_ledger",
+    "source": "MLEED|watchers.news",
+    "source_scope_rows": 467,
+    "tcg_status": "pending_tcg_receipt",
+    "verified_existing_disjoint_rows": 5
+  },
+  "privacy": {
+    "article_urls_or_data_published": false,
+    "canonical_workbook_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "raw_identities_published": false
+  },
+  "publication": {
+    "archive_validation": "453/453 reviewed archive-runnable tests passed",
+    "changed_tracker_test_executed_before_publication": false,
+    "tracker_test_commit": "9ed1ae92e28601f3da8dfbe52be3ef6722018dbe"
+  },
+  "record_kind": "sanitized_scheduled_advancement",
+  "scheduled_window_local": "2026-11-10 22:15 America/New_York",
+  "schema_version": 1,
+  "verification": {
+    "comparison_space_unchanged": true,
+    "current_scope_contract_count": 11,
+    "current_scope_point_count": 33,
+    "postpublication_audit": "30/30 approved",
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audit": "32/32 approved",
+    "remote_snapshot_byte_identical": true,
+    "snapshot_sha256": "59f769397dade3703730b1e2133fee80b94bd572d4976ada17a2d90c94ae1c75",
+    "source_override_count": 17,
+    "space_runtime": "RUNNING",
+    "zungru_space_commit": "2021cb3189f549881fbf2c359ca85b1de6faed91"
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the untouched recovery2 scraping packet and launch once only if every gate passes; if blocked, prepare the next canonical-only terminal count contract without running a second guard or ending on verification alone."
+}
