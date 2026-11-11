@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-11 06:15 America/New_York",
+  "completed_at_utc": "2026-11-11T11:42:34Z",
+  "capacity_result": {
+    "valid_guard_count": 1,
+    "status": "blocked",
+    "launch_allowed": false,
+    "runtime_roots_checked": 5,
+    "runtime_root_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked",
+      "swap_pressure_blocked"
+    ],
+    "reduced_reason_codes": [
+      "memory_available_bytes_reduced"
+    ],
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLEED|env-news.com",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-06-02",
+    "range_end": "2026-09-30",
+    "initial_terminal_accounting": "19=17+2",
+    "final_exact_passes": 19,
+    "guarded_promotion_complete": 19,
+    "scoped_patchtools_complete": 19,
+    "remaining_scrape_outcomes": 0,
+    "pre_tcg_terminal_receipt_available": false,
+    "complete_terminal_month_ledger_available": false,
+    "scraped_promoted_status": "pending_exact_terminal_month_ledger",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "publication": {
+    "tracker_test_commit": "5b17f037f6f9e49e84ccdb53132cc28aabc8d63b",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "453/453 reviewed archive-runnable tests passed"
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audit": "32/32 approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "3db54abe64fa63cc8a85af0e77d14329adfe037a",
+    "snapshot_sha256": "36e0259d40debec0ce39ba4f233cf3fe7d6c8d30ca0283584592975f5a62d9c9",
+    "space_runtime": "RUNNING",
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 12,
+    "source_override_count": 18,
+    "current_scope_point_count": 37,
+    "all_current_scope_points_null": true,
+    "comparison_space_unchanged": true
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the next eligible window, run one fresh capacity guard for the untouched recovery2 scraping packet and launch once only if every gate passes; if blocked, prepare and publish the independently reviewed climateinsurance.org current-scope contract from static terminal evidence without running a second guard."
+}
