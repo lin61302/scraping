@@ -511,7 +511,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["neweasterneurope.eu"]["pipeline_state"],"Observation needs review; guarded promotion manifest pending")
         self.assertEqual(by_source["neweasterneurope.eu"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["neweasterneurope.eu"]["tcg_series_availability"],"Pending current-scope TCG receipt")
-        self.assertEqual(summary["latest_window"]["state"],"guard_scope_failed_no_launch")
+        self.assertEqual(summary["latest_window"]["state"],"prepared_waiting_capacity")
         self.assertEqual(summary["source_override_count"],21)
         self.assertEqual(set(contracts),{
             "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug",
@@ -624,7 +624,7 @@ class SnapshotTests(unittest.TestCase):
 
     def test_release_exposes_latest_operations_without_advancing_verified_dates(self):
         self.assertEqual(self.data["meta"]["snapshot_version"],5)
-        self.assertEqual(self.data["operations"]["latest_window"]["state"],"guard_scope_failed_no_launch")
+        self.assertEqual(self.data["operations"]["latest_window"]["state"],"prepared_waiting_capacity")
         self.assertFalse(self.data["operations"]["latest_window"]["work_started"])
         self.assertGreaterEqual(
             self.data["operations"]["generated_at_utc"],
