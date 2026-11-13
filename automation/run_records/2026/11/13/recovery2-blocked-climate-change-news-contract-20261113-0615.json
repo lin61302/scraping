@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-13 06:15 America/New_York",
+  "completed_at_utc": "2026-11-13T11:34:34Z",
+  "capacity_result": {
+    "guard_attempt_count": 1,
+    "valid_guard_count": 1,
+    "review_result": "approved_blocked_no_launch",
+    "status": "blocked",
+    "launch_allowed": false,
+    "active_runtime_roots_checked": 5,
+    "configured_roots_total_bytes": 0,
+    "maximum_log_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "reduced_reason_codes": [
+      "swap_used_percent_reduced"
+    ],
+    "second_guard_run": false,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false,
+    "active_packet_unchanged_and_unconsumed": true
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLEED|climatechangenews.com",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-09-01",
+    "range_end": "2026-09-30",
+    "observation_accounting": "46=42+4+0",
+    "observation_state": "observed_needs_review",
+    "verified_completion": false,
+    "guarded_promotion_terminal_receipt_available": false,
+    "source_level_tcg_terminal_receipt_available": false,
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "publication": {
+    "tracker_test_commit": "737aea484fd752ed10b5fcd67ac7387ad25ffa89",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "453/453 reviewed archive-runnable tests passed"
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audit": "32/32 approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "d6d59f5e55a8490e2d7d12e3371f3841b72d490e",
+    "snapshot_sha256": "f5792021fe9a455d0b589a7f5bc3f030f69b8778edc7e42838cb753379a9a901",
+    "space_runtime": "RUNNING",
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 16,
+    "source_override_count": 22,
+    "current_scope_point_count": 41,
+    "all_current_scope_points_null": true,
+    "latest_operational_state": "capacity_blocked_no_launch",
+    "all_country_rollups_unchanged": true,
+    "comparison_space_unchanged": true
+  },
+  "evidence_sha256": {
+    "guard_receipt": "9195acff87457eb9e22dac4ff2ec58807c42a562f7cdab851b44fa66a93bdc1c",
+    "guard_independent_review": "0cbc9430a68ffa4a1d15ed07ecda300a7fa910f90c493909369168183abea654",
+    "count_contract": "41aa87f4a45574558dfaa31d3e0f16f3d4aa57a96b98b7da210d8995a528b9de",
+    "count_contract_independent_audit": "a2eb25006152ce7857274bafb9ea6ca7289490fba95ba6513e53c681aebe041f",
+    "tracker_prerelease_audit": "dcdb7e81dbb3dcec357cc2305ae32f71cd373b3c0822c9d8c4211e812df025c3",
+    "tracker_postpublication_audit": "14850c5a8cd00d3b503505c097d86580fdcb1b9f8cc3b2bc985cfef3c45ae2b6"
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the 2026-11-13 14:15 America/New_York window, run one fresh capacity guard against only the five active packet roots and launch once only if every gate passes; if blocked, run no second guard and complete a separately reviewed bounded source advancement."
+}
