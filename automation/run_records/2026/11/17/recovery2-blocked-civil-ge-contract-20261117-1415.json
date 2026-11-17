@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-17 14:15 America/New_York",
+  "completed_at_utc": "2026-11-17T19:24:57Z",
+  "capacity_result": {
+    "guard_attempt_count": 1,
+    "valid_guard_count": 1,
+    "review_result": "approved_blocked_no_launch",
+    "status": "blocked",
+    "launch_allowed": false,
+    "active_runtime_roots_checked": 5,
+    "configured_roots_total_bytes": 0,
+    "maximum_log_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked"
+    ],
+    "reduced_reason_codes": [
+      "load_per_cpu_reduced",
+      "swap_used_percent_reduced"
+    ],
+    "second_guard_run": false,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false,
+    "active_packet_unchanged_and_unconsumed": true
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLP|civil.ge",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-09-16",
+    "range_end": "2026-09-30",
+    "observation_accounting": "100=59+0+36+5+0",
+    "observation_state": "observed_dry_run_ready",
+    "verified_completion": false,
+    "guarded_promotion_terminal_receipt_available": false,
+    "source_level_tcg_terminal_receipt_available": false,
+    "older_downstream_scope_identity_equivalent": false,
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "publication": {
+    "tracker_test_commit": "6b40e18259ddc873ce1080b60f355d47eec0f2f2",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "453/453 reviewed archive-runnable tests passed"
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audit": "32/32 approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "ededa17a3e2f16d6d498a72a92bfd5d13208f804",
+    "snapshot_sha256": "3f00e91a9af1da1f85a1cba0c6ceb23f30588e0acc4de3d3f97cc09f1a185f43",
+    "space_runtime": "RUNNING",
+    "static_root_index_and_snapshot_http_200": true,
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 20,
+    "source_override_count": 26,
+    "current_scope_point_count": 45,
+    "all_current_scope_points_null": true,
+    "latest_operational_state": "capacity_blocked_no_launch",
+    "only_expected_source_country_and_summary_deltas": true,
+    "comparison_space_unchanged": true
+  },
+  "evidence_sha256": {
+    "guard_receipt": "63b50bbd614a801193cbe79586224e84fe2dee433164d7715f63f88bde895874",
+    "guard_independent_review": "0c67207be9d49ed2d472d794be989afa05996227f6fa4ffe54efe9121fca1a4c",
+    "count_contract": "319051f17c211f4077afa20348b04817b0c93795d55e5ace0e054ff9c41c457b",
+    "count_contract_independent_audit": "9972201b5f56aa764937eb389aed68d0e760174e3c2ee6eccda09015603217d3",
+    "tracker_prerelease_audit": "d5d25c9dc6cd150f6b6551a18f87cbc7db5de73428e9f3f5b0a4d72226def403",
+    "tracker_postpublication_audit": "60fea9b42b6efe357d82fe00e1f38c827e3ebb12ba67cf9f94d27b92c04c655d"
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the 2026-11-17 22:15 America/New_York window, run one fresh capacity guard against only the five active packet roots and launch once only if every gate passes; if blocked, run no second guard and complete a separately reviewed bounded source advancement."
+}
