@@ -526,11 +526,14 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["civil.ge"]["pipeline_state"],"Observation dry run accepted; guarded promotion manifest pending")
         self.assertEqual(by_source["civil.ge"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["civil.ge"]["tcg_series_availability"],"Pending current-scope TCG receipt")
+        self.assertEqual(by_source["arminfo.info"]["pipeline_state"],"Observation dry run accepted; guarded promotion manifest pending")
+        self.assertEqual(by_source["arminfo.info"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
+        self.assertEqual(by_source["arminfo.info"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
-        self.assertEqual(summary["latest_window"]["scheduled_local"],"2026-11-17 14:15")
-        self.assertEqual(summary["latest_window"]["evidence_through_utc"],"2026-11-17T19:12:12Z")
-        self.assertEqual(summary["latest_window"]["consecutive_blocked_windows"],19)
-        self.assertEqual(summary["source_override_count"],26)
+        self.assertEqual(summary["latest_window"]["scheduled_local"],"2026-11-17 22:15")
+        self.assertEqual(summary["latest_window"]["evidence_through_utc"],"2026-11-18T03:15:26Z")
+        self.assertEqual(summary["latest_window"]["consecutive_blocked_windows"],20)
+        self.assertEqual(summary["source_override_count"],27)
         self.assertEqual(set(contracts),{
             "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug",
             "MLP|csmonitor.com","MLP|asiatimes.com","MLP|themoscowtimes.com",
@@ -547,6 +550,7 @@ class SnapshotTests(unittest.TestCase):
             "MLEED|birgun.net",
             "MLEED|climate.gov.ph",
             "MLP|civil.ge",
+            "MLEED|arminfo.info",
         })
 
     def test_current_scope_contracts_use_explicit_null_not_zero(self):
@@ -556,7 +560,7 @@ class SnapshotTests(unittest.TestCase):
             for source_key,operation in operations["sources"].items()
             if operation["count_contract"] is not None
         }
-        self.assertEqual(len(contracts),20)
+        self.assertEqual(len(contracts),21)
         for source_key,contract in contracts.items():
             with self.subTest(source=source_key, scope=contract["scope_label"], start=contract["range_start"]):
                 self.assertEqual(contract["publication_date_field"],"date_publish")
@@ -648,15 +652,15 @@ class SnapshotTests(unittest.TestCase):
     def test_release_exposes_latest_operations_without_advancing_verified_dates(self):
         self.assertEqual(self.data["meta"]["snapshot_version"],5)
         self.assertEqual(self.data["operations"]["latest_window"]["state"],"capacity_blocked_no_launch")
-        self.assertEqual(self.data["operations"]["latest_window"]["scheduled_local"],"2026-11-17 14:15")
-        self.assertEqual(self.data["operations"]["latest_window"]["evidence_through_utc"],"2026-11-17T19:12:12Z")
-        self.assertEqual(self.data["operations"]["latest_window"]["consecutive_blocked_windows"],19)
+        self.assertEqual(self.data["operations"]["latest_window"]["scheduled_local"],"2026-11-17 22:15")
+        self.assertEqual(self.data["operations"]["latest_window"]["evidence_through_utc"],"2026-11-18T03:15:26Z")
+        self.assertEqual(self.data["operations"]["latest_window"]["consecutive_blocked_windows"],20)
         self.assertFalse(self.data["operations"]["latest_window"]["work_started"])
         self.assertGreaterEqual(
             self.data["operations"]["generated_at_utc"],
             self.data["operations"]["latest_window"]["evidence_through_utc"],
         )
-        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],20)
+        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],21)
         by_source={row["source"]:row for row in self.data["sources"]}
         expected={
             "newsroompanama.com":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
@@ -685,6 +689,7 @@ class SnapshotTests(unittest.TestCase):
             "birgun.net":"Observation dry run accepted; guarded promotion manifest pending",
             "climate.gov.ph":"Observation dry run accepted; guarded promotion manifest pending",
             "civil.ge":"Observation dry run accepted; guarded promotion manifest pending",
+            "arminfo.info":"Observation dry run accepted; guarded promotion manifest pending",
         }
         for source,current_stage in expected.items():
             with self.subTest(source=source):
