@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-18 06:15 America/New_York",
+  "completed_at_utc": "2026-11-18T11:27:22Z",
+  "capacity_result": {
+    "guard_attempt_count": 1,
+    "valid_guard_count": 1,
+    "review_result": "approved_blocked_no_launch",
+    "status": "blocked",
+    "launch_allowed": false,
+    "active_runtime_roots_checked": 5,
+    "configured_roots_total_bytes": 0,
+    "maximum_log_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked"
+    ],
+    "reduced_reason_codes": [
+      "load_per_cpu_reduced",
+      "swap_used_percent_reduced"
+    ],
+    "second_guard_run": false,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false,
+    "active_packet_unchanged_and_unconsumed": true
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLEED|hetq.am",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-09-25",
+    "range_end": "2026-09-30",
+    "observation_accounting": "27=1+0+5+0+21+0+0",
+    "observation_state": "observed_dry_run_ready",
+    "verified_completion": false,
+    "guarded_promotion_terminal_receipt_available": false,
+    "source_level_tcg_terminal_receipt_available": false,
+    "historical_tcg_scope_current": false,
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "publication": {
+    "tracker_test_commit": "591700c2c30fe204ffb220d7ff22c443ac69b60e",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "453/453 reviewed archive-runnable tests passed"
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audit": "32/32 approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "e06a71de8ca83ff1f966adc47f674483406bc909",
+    "snapshot_sha256": "b9add6912c7d3e38940a3937b7131db46ca2003620d0721a1144829817d33b7e",
+    "space_runtime": "RUNNING",
+    "static_root_index_and_snapshot_http_200": true,
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 22,
+    "source_override_count": 28,
+    "current_scope_point_count": 47,
+    "all_current_scope_points_null": true,
+    "latest_operational_state": "capacity_blocked_no_launch",
+    "only_expected_source_country_and_summary_deltas": true,
+    "comparison_space_unchanged": true
+  },
+  "evidence_sha256": {
+    "guard_receipt": "b77aaff06ba3882a055e1e2ac3e06b774fe1d8c9698b18ea388b9d19d14fab71",
+    "guard_independent_review": "996b16826ae9ab8e01ee52c33c02ba5ff787809874676292f1c74847c7d12fc9",
+    "count_contract": "b13e341e9c2f3a28c018a835ee614e45d54a6bf88f08f6e4afeb0ebf794498e1",
+    "count_contract_independent_audit": "c8a33c12927de147cc22112aa2c53f0a523662688c9722d2cfed112a7300ebde",
+    "tracker_prerelease_audit": "1f76f85830f13fc2b961fa9b16ecb26a9e71e5531c71e8a740e5c51b33cf7cad",
+    "tracker_prerelease_diff_audit": "170b20aaeeac5e6f8b44c897e3dcdb7a89d67f6177b02d9bf24c6a3ae25f1dbf",
+    "tracker_postpublication_audit": "9b1141e88e4cbfe09940113f41835c7602ff8071e41a9fa91f677aedf6b6ba01"
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the 2026-11-18 14:15 America/New_York window, run one fresh capacity guard against only the five active packet roots and launch once only if every gate passes; if blocked, run no second guard and complete a separately reviewed bounded source advancement."
+}
