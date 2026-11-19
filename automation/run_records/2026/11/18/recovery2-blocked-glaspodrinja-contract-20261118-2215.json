@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-18 22:15 America/New_York",
+  "completed_at_utc": "2026-11-19T03:33:43Z",
+  "capacity_result": {
+    "guard_attempt_count": 1,
+    "valid_guard_count": 1,
+    "review_result": "approved_blocked_no_launch",
+    "status": "blocked",
+    "launch_allowed": false,
+    "active_runtime_roots_checked": 5,
+    "configured_roots_total_bytes": 0,
+    "maximum_log_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_percent_blocked"
+    ],
+    "reduced_reason_codes": [
+      "filesystem_free_bytes_reduced",
+      "load_per_cpu_reduced",
+      "swap_used_percent_reduced"
+    ],
+    "second_guard_run": false,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false,
+    "active_packet_unchanged_and_unconsumed": true
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLEED|glaspodrinja.rs",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-09-16",
+    "range_end": "2026-09-30",
+    "observation_accounting": "6=6+0+0+0+0+0+0",
+    "observation_state": "observed_dry_run_ready",
+    "verified_completion": false,
+    "guarded_promotion_terminal_receipt_available": false,
+    "source_level_tcg_terminal_receipt_available": false,
+    "historical_tcg_scope_current": false,
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "autonomous_remediation": {
+    "initial_tracker_smoke_failed_closed": true,
+    "cause": "Preserved prior contracts retained the previous overlay generation time.",
+    "action": "Normalized all current contract generation timestamps to the new overlay timestamp without changing any scope, series point, status, boundary, or historical count series.",
+    "release_before_remediation": false,
+    "successful_primary_validation": "36/36"
+  },
+  "publication": {
+    "tracker_test_commit": "acc3cb065482c1d06d4207b19796796aff411cc7",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "453/453 reviewed archive-runnable tests passed"
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audits": "32/32 primary and 32/32 exact-diff approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "2c1158ce3c4714c2be5d41848fffbb78f07d94f6",
+    "snapshot_sha256": "149c3027d20637f836a5a0dc04b58dad6561c6e4b5dd17fda16aa33618afb645",
+    "space_runtime": "RUNNING",
+    "static_root_index_and_snapshot_http_200": true,
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 24,
+    "source_override_count": 30,
+    "current_scope_point_count": 49,
+    "all_current_scope_points_null": true,
+    "latest_operational_state": "capacity_blocked_no_launch",
+    "only_expected_source_country_and_summary_deltas": true,
+    "comparison_space_unchanged": true
+  },
+  "evidence_sha256": {
+    "guard_receipt": "4cc04eb9c8f42b33c00c7f810d6f5a70d9bd2d902aa07153a3030c2b31cb0b63",
+    "guard_independent_review": "4e45ff6a8b7062c14c343f2b77b54b12e02372fcec82196c3ca58d2d18439585",
+    "count_contract": "5237057a61dd57dade2a7c1dd5da0c23ed81cb4d17979a2f07022d5376449394",
+    "count_contract_independent_audit": "3e9e98e4b9337632728ef82ba114cb4bef43addb7d2372c9de3cd46b434b336d",
+    "tracker_test_publish_manifest": "f55c2eb8f368d9020e4f61300a8928150cca1bc2c818038811420d18473b321a",
+    "tracker_test_publish_receipt": "f6d266e0a1979a9971c92a7eff806d7e7de6e85106e416df4c5c2c7f585230b4",
+    "tracker_primary_test_receipt": "033400f477b24cc062d7caf20d4209e4e248b4504c7461da4efdd4168c321bdb",
+    "tracker_independent_test_receipt": "478cb3adea712982334e17dba5c2dcb7c2bd2556390a3a027a4031a4244449f6",
+    "tracker_prerelease_audit": "42b4d7db43b7ca2e9b200ab672294506a394009395227d1fdf26d08999266f0a",
+    "tracker_prerelease_diff_audit": "8252f8def7ff48f19d94fd893a10a7da9dfb934c797df3ba73c4329c7cef1c1b",
+    "tracker_postpublication_audit": "c85b278f8dde618ff1e1588252553da620dce05b5c0523544b39a368b70fb3e2"
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "infrastructure_details_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the 2026-11-19 06:15 America/New_York window, run one fresh capacity guard against only the five active packet roots and launch once only if every gate passes; if blocked, run no second guard and complete a separately reviewed bounded source advancement."
+}
