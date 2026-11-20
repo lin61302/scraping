@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-20 06:15 America/New_York",
+  "completed_at_utc": "2026-11-20T11:28:46Z",
+  "capacity_result": {
+    "guard_attempt_count": 1,
+    "valid_guard_count": 1,
+    "review_result": "approved_blocked_no_launch",
+    "status": "blocked",
+    "launch_allowed": false,
+    "active_runtime_roots_checked": 5,
+    "configured_roots_total_bytes": 0,
+    "maximum_log_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked"
+    ],
+    "reduced_reason_codes": [
+      "load_per_cpu_reduced",
+      "swap_used_percent_reduced"
+    ],
+    "second_guard_run": false,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false,
+    "active_packet_unchanged_and_unconsumed": true
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLP|bulawayo24.com",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-09-16",
+    "range_end": "2026-09-30",
+    "observation_accounting": "129=114+10+0+0+5+0+0",
+    "observation_state": "observed_needs_review",
+    "verified_completion": false,
+    "guarded_promotion_terminal_receipt_available": false,
+    "source_level_tcg_terminal_receipt_available": false,
+    "historical_tcg_scope_current": false,
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "publication": {
+    "tracker_test_commit": "ccbd1131a5cd4d71345358265696ff98cc12d85d",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "434/434 non-fixture tests and 19/19 independently verified archive-runnable fixture-suite tests passed",
+    "autonomous_remediation": "The first frozen export failed closed on public action-text length; only the wording was shortened before a clean export, with scope and semantics unchanged."
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audits": "32/32 prerelease and 24/24 exact-diff approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "b829fbfce4418e363608023c6eaee9345b4839f6",
+    "snapshot_sha256": "64a4591e262f32e65a20371ba0264f51ab0740895d484d35254422382ebdcef3",
+    "space_runtime": "RUNNING",
+    "static_root_index_and_snapshot_http_200": true,
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 28,
+    "source_override_count": 34,
+    "current_scope_point_count": 53,
+    "all_current_scope_points_null": true,
+    "latest_operational_state": "capacity_blocked_no_launch",
+    "only_expected_source_country_summary_and_window_deltas": true,
+    "comparison_space_unchanged": true
+  },
+  "evidence_sha256": {
+    "guard_receipt": "a093c60e3a8100b102be74207aaeedda9a29f2a9d13b68ab8913782f3f509bfd",
+    "guard_independent_review": "4f406d091b5478aab7691df54fe6dccb306a5dbd2b4c731fbce6fb9ec6449dc8",
+    "count_contract": "888709dff40ee0a991cf8ee829f65d16cb6cebe721ee345a07b2237d2ddbcba4",
+    "count_contract_independent_audit": "1d29c0db2a5cd8169be1ee82195e6e001337a6a2b383c7092593cc25994d30dc",
+    "tracker_test_publish_manifest": "3a6b38f963dda4483745b61c72ddb0d44d2cbe41de9c43d30bea9ea7273feee0",
+    "tracker_test_publish_receipt": "c88b158ae4c228cf7633f48d099ecbc3165b2496396d8a66f0eec21de8d275c8",
+    "tracker_primary_test_receipt": "4bd7d9dbbee98e6a6686ed64cb40f661b169c28f7428d7977d7e15209573ef3c",
+    "tracker_independent_test_receipt": "a0b3a2c3116353b5f26b169f69bb27c4407ac0ecc1cd702f17ef871e7d79b35a",
+    "tracker_prerelease_audit": "2951a73b186826f378b651cf349454ef34694517d1f1b397bde2b52557a607a1",
+    "tracker_prerelease_diff_audit": "94e9c95a5f988616bf4f38a28dbaed13bfe281efa204d4770cb44452ca83e7f2",
+    "tracker_publication_receipt": "ca6fa0a09aa060e3753166eff27ee8b48b0bbd553fca61f07725df9f6c160957",
+    "tracker_postpublication_audit": "500ee9c39ae582a1dcf11a9e5b04c42b1ead8722872c959132203204ca96352d"
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "infrastructure_details_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the 2026-11-20 14:15 America/New_York window, run one fresh capacity guard against only the five active packet roots and launch once only if every gate passes; if blocked, run no second guard and complete a separately reviewed bounded source advancement."
+}
