@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-20 22:15 America/New_York",
+  "completed_at_utc": "2026-11-21T03:35:42Z",
+  "capacity_result": {
+    "guard_attempt_count": 1,
+    "valid_guard_count": 1,
+    "review_result": "approved_blocked_no_launch",
+    "status": "blocked",
+    "launch_allowed": false,
+    "active_runtime_roots_checked": 5,
+    "configured_roots_total_bytes": 0,
+    "maximum_log_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "reduced_reason_codes": [
+      "swap_used_percent_reduced"
+    ],
+    "second_guard_run": false,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false,
+    "active_packet_unchanged_and_unconsumed": true
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLP|thestandard.co.zw",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-09-16",
+    "range_end": "2026-09-30",
+    "observation_accounting": "47=44+3+0+0+0+0+0",
+    "observation_state": "observed_needs_review",
+    "verified_completion": false,
+    "guarded_promotion_terminal_receipt_available": false,
+    "source_level_tcg_terminal_receipt_available": false,
+    "historical_tcg_scope_current": false,
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "publication": {
+    "tracker_test_commit": "c1027a2fc1f6bbe3966434175aa09b141a83bae7",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "434/434 non-fixture tests and 19/19 independently verified archive-runnable fixture-suite tests passed",
+    "autonomous_remediation": "none required"
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audits": "32/32 prerelease and 24/24 exact-diff approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "36e4e0bde8bf0d2d093f0a4fef45ad64d66b43fe",
+    "snapshot_sha256": "3fa5f43609795375d60b02dd9f6440ae8fa59dd4a1fdf55bb88f9b824160f29f",
+    "space_runtime": "RUNNING",
+    "static_root_index_and_snapshot_http_200": true,
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 30,
+    "source_override_count": 36,
+    "current_scope_point_count": 55,
+    "all_current_scope_points_null": true,
+    "latest_operational_state": "capacity_blocked_no_launch",
+    "only_expected_source_country_summary_and_window_deltas": true,
+    "comparison_space_unchanged": true
+  },
+  "evidence_sha256": {
+    "guard_receipt": "465413176ddfdd097af29cdb9426692295e03c91215cf40bf0aca9c731287727",
+    "guard_independent_review": "f4cc36a38e4300d396a2f8bd41ea69f2c52d9ff24e34b7bc359fdfbf6bb5c8e7",
+    "count_contract": "7d125a8b4ad9bfed8ffe142d1da618cd761fd9409fad4c9ea364bf96016aabfc",
+    "count_contract_independent_audit": "7ecc2a39393ee9dedc1b667e26f158ffb52b7878d0f6cea1b726cb4cbea13551",
+    "tracker_test_publish_manifest": "b36a98a9796d0a64d2dfa7dbefe2104de2ebb55ac3d562a6498922e68174363a",
+    "tracker_test_publish_receipt": "eaadbb96f53a4d9f96cce65febcd5f8f8c4661b37440863291eabb15b7bafe81",
+    "tracker_primary_test_receipt": "038674ccf758b0b3c8843ef11ab49039a51c5ea8cdf18637fc42ba33f35813c6",
+    "tracker_independent_test_receipt": "a5d40b0ca86805489eec91923abfde1881d1e2ba5e4adf0d4e05eddf970cb46a",
+    "tracker_prerelease_audit": "48f5ae98b168796331df4ffa8338d843fefe1dbf8b800d5900b0ced32fe755fb",
+    "tracker_prerelease_diff_audit": "cde993d505df6a6745af9e372af81fb95f313665672606dd5ab70c7f977b472f",
+    "tracker_publication_receipt": "afb86d5812a7cba34fce351c5d67dfc507d9d22284a30c48d53ae98d35135399",
+    "tracker_postpublication_audit": "4781c6942e931c6ceb75b5bb1b135dac803bedb1d82ead8e4f171afb82121319"
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "infrastructure_details_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the 2026-11-21 06:15 America/New_York window, run one fresh capacity guard against only the five active packet roots and launch once only if every gate passes; if blocked, run no second guard and complete a separately reviewed bounded source advancement."
+}
