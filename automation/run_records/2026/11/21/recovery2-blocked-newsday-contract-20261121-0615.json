@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "record_kind": "sanitized_scheduled_advancement",
+  "automation_id": "priority-country-scraping-monitor",
+  "scheduled_window_local": "2026-11-21 06:15 America/New_York",
+  "completed_at_utc": "2026-11-21T11:32:22Z",
+  "capacity_result": {
+    "guard_attempt_count": 1,
+    "valid_guard_count": 1,
+    "review_result": "approved_blocked_no_launch",
+    "status": "blocked",
+    "launch_allowed": false,
+    "active_runtime_roots_checked": 5,
+    "configured_roots_total_bytes": 0,
+    "maximum_log_bytes": 0,
+    "matching_scraper_processes": 0,
+    "matching_browser_processes": 1,
+    "permitted_workers": 0,
+    "blocking_reason_codes": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "reduced_reason_codes": [
+      "swap_used_percent_reduced"
+    ],
+    "second_guard_run": false,
+    "attempt_marker_created": false,
+    "preflight_run": false,
+    "authorization_created": false,
+    "launch_run": false,
+    "active_packet_unchanged_and_unconsumed": true
+  },
+  "offline_advancement": {
+    "result": "privacy_safe_current_scope_count_contract_prepared_audited_and_published",
+    "source": "MLP|newsday.co.zw",
+    "publication_date_field": "date_publish",
+    "range_start": "2026-09-16",
+    "range_end": "2026-09-30",
+    "observation_accounting": "249=249+0+0+0+0+0+0",
+    "observation_state": "observed_needs_review",
+    "verified_completion": false,
+    "guarded_promotion_terminal_receipt_available": false,
+    "source_level_tcg_terminal_receipt_available": false,
+    "historical_tcg_scope_current": false,
+    "scraped_promoted_status": "pending_promotion_terminal_receipt",
+    "tcg_status": "pending_tcg_receipt",
+    "public_pending_values_are_null": true,
+    "independent_contract_audit": "54/54 approved",
+    "canonical_boundaries_changed": false,
+    "database_access_performed": false,
+    "production_write_performed_by_this_unit": false
+  },
+  "publication": {
+    "tracker_test_commit": "fb358ce63d85430ae05f243c5fc87534aa7d8fa7",
+    "changed_tracker_test_published_before_execution": true,
+    "archive_validation": "434/434 non-fixture tests and 19/19 independently verified archive-runnable fixture-suite tests passed",
+    "autonomous_remediation": "The first helper attempt failed closed on a dirty archive worktree; the archive copy was restored and the guarded one-file publication succeeded before any changed test executed."
+  },
+  "verification": {
+    "privacy_and_consistency_tests": "36/36 primary and 36/36 independent",
+    "release_audits": "32/32 prerelease and 24/24 exact-diff approved",
+    "postpublication_audit": "30/30 approved",
+    "zungru_space_commit": "8aace797ef43d15f31ff06c70ef7e49d281b4021",
+    "snapshot_sha256": "db58e04ad035812e4d4c63cca6bad0905331a3cd9c0d5b2b4246e474f39057c2",
+    "space_runtime": "RUNNING",
+    "static_root_index_and_snapshot_http_200": true,
+    "remote_snapshot_byte_identical": true,
+    "historical_count_series_preserved": 636,
+    "current_scope_contract_count": 31,
+    "source_override_count": 37,
+    "current_scope_point_count": 56,
+    "all_current_scope_points_null": true,
+    "latest_operational_state": "capacity_blocked_no_launch",
+    "only_expected_source_summary_and_window_deltas": true,
+    "country_and_attention_rollups_unchanged": true,
+    "comparison_space_unchanged": true
+  },
+  "evidence_sha256": {
+    "guard_receipt": "397f6ce4d6ecf990b674b9d236e81e79b9f6357d48f9871378b30a181c03e718",
+    "guard_independent_review": "5a4a8816fbed890c33f1cb3b1718c7df0d541ab0bf745701749a642f4ae9ad41",
+    "count_contract": "eb398ff606b55f86df0451365c831686ff2ba99023882255491834a4756ce9bd",
+    "count_contract_independent_audit": "324a73c07dbe8024e954750c9417f7c10adedc0a05d8797b573d811a3bf428a0",
+    "tracker_test_publish_manifest": "663492b199be7f68fa9acce11da8e8eb365c3e80bbdf6050a76a2221bcd0be64",
+    "tracker_test_publish_receipt": "971a3a175028dc6b3242cba0a4bbae4a67cb8eea0c4cd16cf0be09f396886d16",
+    "tracker_primary_test_receipt": "e21ca42fad25d5e32df0e47570d458f944f331ff05b495b1ed75486d25aac664",
+    "tracker_independent_test_receipt": "40301b6e3c519d49a20c6ac9c3d5a2a718c3f2cb3f80fa2ed33e3f7193cd548e",
+    "tracker_prerelease_audit": "cef55a7b78ed9a11bdfaa892ccdd3462e4e36e97d6cd53262400dffb86f51931",
+    "tracker_prerelease_diff_audit": "d658988e77c850a71a0b99e08fd0a7e17f00e60db7247d68631225446fa3fc64",
+    "tracker_publication_receipt": "70f8a1d9b96f04baf64257ebbf22f470b8aca31d5126e14fc65e7bbed50b7c67",
+    "tracker_postpublication_audit": "aa5d684a7e9e656a79d843f8f73c9a645180bb50cba9444b72d9db41c1208c71"
+  },
+  "privacy": {
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "infrastructure_details_published": false,
+    "process_ids_published": false,
+    "canonical_workbook_published": false
+  },
+  "next_action": "At the 2026-11-21 14:15 America/New_York window, run one fresh capacity guard against only the five active packet roots and launch once only if every gate passes; if blocked, run no second guard and complete a separately reviewed bounded source advancement."
+}
