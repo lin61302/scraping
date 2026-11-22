@@ -562,7 +562,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["zimbabwesituation.com"]["pipeline_state"],"Observation needs review; guarded promotion manifest pending")
         self.assertEqual(by_source["zimbabwesituation.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["zimbabwesituation.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
-        self.assertEqual(by_source["zimlive.com"]["pipeline_state"],"Observation needs review; guarded promotion reconciliation pending")
+        self.assertEqual(by_source["zimlive.com"]["pipeline_state"],"Observation needs review; guarded promotion manifest pending")
         self.assertEqual(by_source["zimlive.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["zimlive.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
@@ -749,7 +749,7 @@ class SnapshotTests(unittest.TestCase):
             "thestandard.co.zw":"Observation needs review; guarded promotion manifest pending",
             "newsday.co.zw":"Observation needs review; guarded promotion manifest pending",
             "zimbabwesituation.com":"Observation needs review; guarded promotion manifest pending",
-            "zimlive.com":"Observation needs review; guarded promotion reconciliation pending",
+            "zimlive.com":"Observation needs review; guarded promotion manifest pending",
         }
         for source,current_stage in expected.items():
             with self.subTest(source=source):
