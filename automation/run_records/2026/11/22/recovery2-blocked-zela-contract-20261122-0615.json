@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "kind": "public_source_advancement_record",
+  "automation_id": "priority-country-scraping-monitor",
+  "window": {
+    "scheduled_local": "2026-11-22 06:15 America/New_York",
+    "completed_at_utc": "2026-11-22T11:48:39Z",
+    "next_eligible_local": "2026-11-22 14:15 America/New_York"
+  },
+  "capacity_gate": {
+    "guard_runs": 1,
+    "decision": "blocked",
+    "launch_allowed": false,
+    "active_roots_checked": 5,
+    "active_root_bytes": 0,
+    "maximum_log_bytes": 0,
+    "scraper_pattern_matches": 0,
+    "browser_pattern_matches": 1,
+    "permitted_network_workers": 0,
+    "permitted_browser_workers": 0,
+    "hard_blocks": [
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "reduced_signals": [
+      "filesystem_free_bytes_reduced",
+      "swap_used_percent_reduced"
+    ],
+    "guard_receipt_sha256": "59e8fd88c731a451e0f03ca2a022d7439d365d9a1eb8f52a119cd242b2ec40e3",
+    "guard_review_sha256": "eb71928dea4212e07d5d733a1a285256e1777ce35e93cdfe8c888523df337940",
+    "guard_review": "approved_24_of_24",
+    "second_guard_run": false,
+    "launch_path_actions_run": false,
+    "active_packet_state": "untouched_unauthorized_unattempted_unlaunched_unconsumed"
+  },
+  "advancement": {
+    "source_key": "MLEED|zela.org",
+    "country": "ZWE",
+    "state": "observed_dry_run_ready",
+    "production_writes": false,
+    "verified_completion": false,
+    "scope": {
+      "publication_date_field": "date_publish",
+      "range_start": "2026-02-04",
+      "range_end": "2026-09-16",
+      "months": [
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09"
+      ],
+      "public_scope_hash": "sha256-base64url:7lVICpYPPYOVgErQPgc_D_r-Fq1dHf5dc-ht8MuLAuM"
+    },
+    "observation": {
+      "accounting_equation": "1=1+0+0+0+0+0+0",
+      "accepted_eligible": 1,
+      "evidenced_zero_buckets": [
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-07",
+        "2026-08",
+        "2026-09"
+      ],
+      "accepted_by_month": {
+        "2026-02": 0,
+        "2026-03": 0,
+        "2026-04": 0,
+        "2026-05": 0,
+        "2026-06": 1,
+        "2026-07": 0,
+        "2026-08": 0,
+        "2026-09": 0
+      },
+      "zero_bucket_basis": "Exact identity-equivalent forward and reverse observations each report one discovered, selected, and passed observation; the sole accepted date_publish falls in June, boundary_reached is true, and page failures are zero."
+    },
+    "central_gate": {
+      "state": "verification_pending",
+      "required_artifact_absent": "candidate_daily_plot",
+      "accepted_manifest_available": false,
+      "operational_advance_recorded": false,
+      "verified_date_advance_recorded": false,
+      "unobserved_tail": "2026-09-17 through 2026-09-30",
+      "unobserved_tail_inferred": false
+    },
+    "monthly_series": {
+      "points": [
+        ["2026-02", null, null],
+        ["2026-03", null, null],
+        ["2026-04", null, null],
+        ["2026-05", null, null],
+        ["2026-06", null, null],
+        ["2026-07", null, null],
+        ["2026-08", null, null],
+        ["2026-09", null, null]
+      ],
+      "promoted_status": "pending_promotion_terminal_receipt",
+      "tcg_status": "pending_tcg_receipt",
+      "missing_values_inferred_as_zero": false
+    },
+    "boundaries": {
+      "recorded_notion": "2026-09-17",
+      "operational_through": "2026-09-16",
+      "first_pass_verified_through": "2026-09-16",
+      "strict_verified_through": "2026-09-16",
+      "first_pass_target": "2026-09-30",
+      "canonical_boundaries_changed": false
+    },
+    "contract_sha256": "b0f767d50824a6aa29f1bb8f698e390335e394814cc6f8da3d36a602fea2e8ed",
+    "independent_contract_review_sha256": "20fbf36777dc10bb8c53edbada7f60d931b76bf4f2755af42e297c99626ac370",
+    "independent_contract_review": "approved_54_of_54"
+  },
+  "tracker_release": {
+    "changed_assertions_published_before_execution_commit": "6fb504991fd2b12c33a7a1b73a615bb19786fe49",
+    "candidate_generation_fail_closed_attempts": 2,
+    "candidate_generation_fail_closed_reason": "public_next_action_length_exceeded_schema_limit",
+    "failed_candidate_released": false,
+    "autonomous_remediation": "The public next action was shortened without changing scope or semantics, then the corrected published assertion was executed.",
+    "primary_validation": "passed_36_of_36",
+    "independent_validation": "passed_36_of_36",
+    "prerelease_privacy_schema_audit": "passed_32_of_32",
+    "prerelease_exact_diff_audit": "passed_24_of_24",
+    "space_commit": "07d0482cd79c8db0a3fa6c73b7a902fac5b8f6d1",
+    "snapshot_sha256": "52149582231e44f183060cf8c03d3043141286469e956f6a5b53dd20020289d8",
+    "runtime_stage": "RUNNING",
+    "http_statuses": {
+      "root": 200,
+      "index": 200,
+      "snapshot": 200
+    },
+    "remote_snapshot_byte_identical": true,
+    "current_scope_contracts": 34,
+    "source_overrides": 40,
+    "all_null_current_scope_buckets": 71,
+    "historical_count_series_preserved": 636,
+    "waves_preserved": 9,
+    "postpublication_audit": "approved_30_of_30",
+    "postpublication_audit_sha256": "f94c07ff5838bf9e04161e8b8cd2fbb74f2c58ec94ed7ca36b15a38e24335763",
+    "authorized_delta": {
+      "source": "MLEED|zela.org",
+      "country": "ZWE review 9 to 10; blocked remains 2 and progress remains Blocked",
+      "pipeline": "Scraping complete 15 to 14; observation dry run 13 to 14",
+      "attention": "On track 486 to 485; Review 37 to 38"
+    },
+    "comparison_space_commit": "f164108f8be83d7b8e06e6c90887b77f0ba66a3a",
+    "comparison_space_changed": false
+  },
+  "safety": {
+    "closed_runtime_access": false,
+    "process_or_runtime_inspection_outside_guard": false,
+    "source_access": false,
+    "database_access": false,
+    "browser_access": false,
+    "ssh_access": false,
+    "production_write": false,
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "infrastructure_or_credentials_published": false,
+    "private_notes_or_pids_published": false,
+    "canonical_workbook_published": false
+  }
+}
