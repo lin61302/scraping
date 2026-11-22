@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "kind": "public_source_advancement_record",
+  "automation_id": "priority-country-scraping-monitor",
+  "window": {
+    "scheduled_local": "2026-11-22 14:15 America/New_York",
+    "completed_at_utc": "2026-11-22T19:38:39Z",
+    "next_eligible_local": "2026-11-22 22:15 America/New_York"
+  },
+  "capacity_gate": {
+    "guard_runs": 1,
+    "decision": "blocked",
+    "launch_allowed": false,
+    "active_roots_checked": 5,
+    "active_root_bytes": 0,
+    "maximum_log_bytes": 0,
+    "scraper_pattern_matches": 0,
+    "browser_pattern_matches": 1,
+    "permitted_network_workers": 0,
+    "permitted_browser_workers": 0,
+    "hard_blocks": [
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "reduced_signals": [
+      "filesystem_free_bytes_reduced",
+      "swap_used_percent_reduced"
+    ],
+    "guard_receipt_sha256": "9be17b0e67690b26106dccac70cba44addc631427407f328a6059c5126d23b31",
+    "guard_review_sha256": "b6b94642ee0d11d9b14cd6011d93564262739affe7ea4ffedbdfebfee9725d7c",
+    "guard_review": "approved_24_of_24",
+    "second_guard_run": false,
+    "launch_path_actions_run": false,
+    "active_packet_state": "untouched_unauthorized_unattempted_unlaunched_unconsumed"
+  },
+  "advancement": {
+    "source_key": "MLP|ambebi.ge",
+    "country": "GEO",
+    "state": "observed_dry_run_ready",
+    "production_writes": false,
+    "verified_completion": false,
+    "scope": {
+      "publication_date_field": "date_publish",
+      "range_start": "2026-09-16",
+      "range_end": "2026-09-30",
+      "months": [
+        "2026-09"
+      ],
+      "public_scope_hash": "sha256-base64url:lCH3zeGJOWs8L9FlV_-JGcv4z74XQpQA4BAWq59huSk"
+    },
+    "observation": {
+      "accounting_equation": "259=259+0+0+0+0+0+0",
+      "accepted_eligible": 259,
+      "in_window_ineligible": 0,
+      "before_window": 0,
+      "prefetch_only": 0,
+      "after_cutoff": 0,
+      "undated": 0,
+      "eligible_outside_acceptance_window": 0,
+      "forward_reverse_pair_available": false,
+      "forward_reverse_identity_equivalence_claimed": false,
+      "preservation": "The exact accepted set is frozen; a full observation rerun is prohibited."
+    },
+    "monthly_series": {
+      "points": [
+        ["2026-09", null, null]
+      ],
+      "promoted_status": "pending_promotion_terminal_receipt",
+      "tcg_status": "pending_tcg_receipt",
+      "missing_values_inferred_as_zero": false
+    },
+    "historical_evidence": {
+      "series_through_month": "2026-08",
+      "tcg_record_through": "2026-08-18",
+      "current_scope_identity_equivalent": false
+    },
+    "boundaries": {
+      "recorded_notion": "2026-09-17",
+      "canonical_operational_through": "2026-09-17",
+      "scrape_record_through": "2026-09-30",
+      "operational_verified_through": "2026-09-16",
+      "first_pass_verified_through": "2026-09-16",
+      "strict_verified_through": "2026-09-16",
+      "first_pass_target": "2026-09-30",
+      "canonical_boundaries_changed": false
+    },
+    "contract_sha256": "c7de5e72b7c84933f91c8ef11ba3cc3e26ab4c8e03a81b7add8667659bb9e4e3",
+    "independent_contract_review_sha256": "3995de941f1556dca65843fdef459ebc15e2357037d63b09fb07a8b8787ca348",
+    "independent_contract_review": "approved_54_of_54"
+  },
+  "tracker_release": {
+    "changed_assertions_published_before_execution_commit": "bdb0915eeccde75cf0a553bfc8238e1503bdb3c0",
+    "primary_validation": "passed_36_of_36",
+    "independent_validation": "passed_36_of_36",
+    "prerelease_privacy_schema_audit": "passed_32_of_32",
+    "prerelease_exact_diff_audit": "passed_24_of_24",
+    "space_commit": "84dd01427b72f8312d3924cdaeef24b6541989a2",
+    "snapshot_sha256": "7890a13045e351c2aab143d9745f38cd44cd8e823fd0592d66a39ff258ae91cf",
+    "runtime_stage": "RUNNING",
+    "http_statuses": {
+      "root": 200,
+      "index": 200,
+      "snapshot": 200
+    },
+    "remote_snapshot_byte_identical": true,
+    "current_scope_contracts": 35,
+    "source_overrides": 41,
+    "all_null_current_scope_buckets": 72,
+    "historical_count_series_preserved": 636,
+    "waves_preserved": 9,
+    "postpublication_audit": "approved_30_of_30",
+    "postpublication_audit_sha256": "99a07b80c0f424e8cc525d6f29f037c76954ed811f5b421b5cd75639491af6fc",
+    "authorized_delta": {
+      "source": "MLP|ambebi.ge",
+      "country": "GEO blocked 7 to 6 and review 1 to 2; progress remains Blocked",
+      "pipeline": "Pre-TCG partial 46 to 45; observation dry run 14 to 15",
+      "attention": "Blocked 60 to 59; Review 38 to 39"
+    },
+    "comparison_space_commit": "f164108f8be83d7b8e06e6c90887b77f0ba66a3a",
+    "comparison_space_changed": false
+  },
+  "safety": {
+    "closed_runtime_access": false,
+    "process_or_runtime_inspection_outside_guard": false,
+    "source_access": false,
+    "database_access": false,
+    "browser_access": false,
+    "ssh_access": false,
+    "production_write": false,
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "infrastructure_or_credentials_published": false,
+    "private_notes_or_pids_published": false,
+    "canonical_workbook_published": false
+  }
+}
