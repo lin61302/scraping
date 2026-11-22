@@ -563,7 +563,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["zimbabwesituation.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["zimbabwesituation.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(by_source["zimlive.com"]["pipeline_state"],"Observation needs review; guarded promotion reconciliation pending")
-        self.assertEqual(by_source["zimlive.com"]["scrape_series_availability"],"Pending guarded promotion reconciliation")
+        self.assertEqual(by_source["zimlive.com"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["zimlive.com"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
         self.assertEqual(summary["latest_window"]["scheduled_local"],"2026-11-21 22:15")
@@ -616,9 +616,7 @@ class SnapshotTests(unittest.TestCase):
                 self.assertEqual([point[0] for point in contract["points"]],contract["months"])
                 self.assertTrue(all(point[1:] == [None,None] for point in contract["points"]))
                 expected_scrape_status=(
-                    "pending_guarded_promotion_reconciliation"
-                    if source_key == "MLP|zimlive.com"
-                    else "pending_exact_terminal_month_ledger"
+                    "pending_exact_terminal_month_ledger"
                     if source_key in {
                         "MLEED|disasterdisplacement.org",
                         "MLEED|balkangreenenergynews.com",
