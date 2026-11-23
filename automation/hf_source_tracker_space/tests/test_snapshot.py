@@ -571,11 +571,14 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(by_source["ambebi.ge"]["pipeline_state"],"Observation dry run accepted; guarded promotion manifest pending")
         self.assertEqual(by_source["ambebi.ge"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
         self.assertEqual(by_source["ambebi.ge"]["tcg_series_availability"],"Pending current-scope TCG receipt")
+        self.assertEqual(by_source["amap.ml"]["pipeline_state"],"Observation needs review; exact rejected set pinned")
+        self.assertEqual(by_source["amap.ml"]["scrape_series_availability"],"Pending guarded promotion terminal receipt")
+        self.assertEqual(by_source["amap.ml"]["tcg_series_availability"],"Pending current-scope TCG receipt")
         self.assertEqual(summary["latest_window"]["state"],"capacity_blocked_no_launch")
-        self.assertEqual(summary["latest_window"]["scheduled_local"],"2026-11-22 14:15")
-        self.assertEqual(summary["latest_window"]["evidence_through_utc"],"2026-11-22T19:21:19Z")
-        self.assertEqual(summary["latest_window"]["consecutive_blocked_windows"],34)
-        self.assertEqual(summary["source_override_count"],41)
+        self.assertEqual(summary["latest_window"]["scheduled_local"],"2026-11-22 22:15")
+        self.assertEqual(summary["latest_window"]["evidence_through_utc"],"2026-11-23T03:11:57Z")
+        self.assertEqual(summary["latest_window"]["consecutive_blocked_windows"],35)
+        self.assertEqual(summary["source_override_count"],42)
         ambebi_contract=contracts["MLP|ambebi.ge"]
         self.assertEqual(ambebi_contract["publication_date_field"],"date_publish")
         self.assertEqual(ambebi_contract["range_start"],"2026-09-16")
@@ -585,6 +588,15 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(ambebi_contract["points"],[["2026-09",None,None]])
         self.assertEqual(ambebi_contract["scrape_series_status"],"pending_promotion_terminal_receipt")
         self.assertEqual(ambebi_contract["tcg_series_status"],"pending_tcg_receipt")
+        amap_contract=contracts["MLP|amap.ml"]
+        self.assertEqual(amap_contract["publication_date_field"],"date_publish")
+        self.assertEqual(amap_contract["range_start"],"2026-09-16")
+        self.assertEqual(amap_contract["range_end"],"2026-09-30")
+        self.assertEqual(amap_contract["months"],["2026-09"])
+        self.assertEqual(amap_contract["scope_hash"],"sha256-base64url:V8nDAKYk3xPFtxBu-2zEFp4NyhAnimewWY5C3rm7EaA")
+        self.assertEqual(amap_contract["points"],[["2026-09",None,None]])
+        self.assertEqual(amap_contract["scrape_series_status"],"pending_promotion_terminal_receipt")
+        self.assertEqual(amap_contract["tcg_series_status"],"pending_tcg_receipt")
         self.assertEqual(set(contracts),{
             "MLP|newsroompanama.com","MLP|eyeradio.org","MLP|eagle.co.ug",
             "MLP|csmonitor.com","MLP|asiatimes.com","MLP|themoscowtimes.com",
@@ -616,6 +628,7 @@ class SnapshotTests(unittest.TestCase):
             "MLP|zimlive.com",
             "MLEED|zela.org",
             "MLP|ambebi.ge",
+            "MLP|amap.ml",
         })
 
     def test_current_scope_contracts_use_explicit_null_not_zero(self):
@@ -625,7 +638,7 @@ class SnapshotTests(unittest.TestCase):
             for source_key,operation in operations["sources"].items()
             if operation["count_contract"] is not None
         }
-        self.assertEqual(len(contracts),35)
+        self.assertEqual(len(contracts),36)
         for source_key,contract in contracts.items():
             with self.subTest(source=source_key, scope=contract["scope_label"], start=contract["range_start"]):
                 self.assertEqual(contract["publication_date_field"],"date_publish")
@@ -717,15 +730,20 @@ class SnapshotTests(unittest.TestCase):
     def test_release_exposes_latest_operations_without_advancing_verified_dates(self):
         self.assertEqual(self.data["meta"]["snapshot_version"],5)
         self.assertEqual(self.data["operations"]["latest_window"]["state"],"capacity_blocked_no_launch")
-        self.assertEqual(self.data["operations"]["latest_window"]["scheduled_local"],"2026-11-22 14:15")
-        self.assertEqual(self.data["operations"]["latest_window"]["evidence_through_utc"],"2026-11-22T19:21:19Z")
-        self.assertEqual(self.data["operations"]["latest_window"]["consecutive_blocked_windows"],34)
+        self.assertEqual(self.data["operations"]["latest_window"]["scheduled_local"],"2026-11-22 22:15")
+        self.assertEqual(self.data["operations"]["latest_window"]["evidence_through_utc"],"2026-11-23T03:11:57Z")
+        self.assertEqual(self.data["operations"]["latest_window"]["consecutive_blocked_windows"],35)
         self.assertFalse(self.data["operations"]["latest_window"]["work_started"])
         self.assertGreaterEqual(
             self.data["operations"]["generated_at_utc"],
             self.data["operations"]["latest_window"]["evidence_through_utc"],
         )
-        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],35)
+        self.assertEqual(self.data["operations"]["source_override_count"],42)
+        self.assertEqual(self.data["meta"]["current_scope_count_contract_count"],36)
+        self.assertEqual(self.data["meta"]["count_series_source_count"],636)
+        self.assertEqual(len(self.data["count_series"]),636)
+        self.assertEqual(len(self.data["waves"]),9)
+        self.assertEqual(sum(len(contract["points"]) for contract in self.data["count_contracts"].values()),73)
         by_source={row["source"]:row for row in self.data["sources"]}
         expected={
             "newsroompanama.com":"Fresh exact repair packet prepared and independently audited; launch pending capacity",
@@ -769,6 +787,7 @@ class SnapshotTests(unittest.TestCase):
             "zimlive.com":"Observation needs review; guarded promotion manifest pending",
             "zela.org":"Observation dry run accepted; guarded promotion manifest pending",
             "ambebi.ge":"Observation dry run accepted; guarded promotion manifest pending",
+            "amap.ml":"Observation needs review; exact rejected set pinned",
         }
         for source,current_stage in expected.items():
             with self.subTest(source=source):
@@ -777,6 +796,23 @@ class SnapshotTests(unittest.TestCase):
                 self.assertEqual(row["operational_state_source"],"Latest scheduled operations")
                 self.assertEqual(row["historical_tcg_state"],row["tcg_record_state"])
                 self.assertEqual(row["historical_tcg_through"],row["tcg_record_through"])
+        amap=by_source["amap.ml"]
+        self.assertEqual(amap["historical_pipeline_state"],"Scraping complete")
+        self.assertEqual(amap["recorded_notion_boundary"],"2026-09-17")
+        self.assertEqual(amap["scrape_record_through"],"2026-09-17")
+        self.assertEqual(amap["coverage_through"],"2026-09-16")
+        self.assertEqual(amap["scrape_verified_through"],"2026-09-16")
+        self.assertEqual(amap["first_pass_verified_through"],"2026-09-16")
+        self.assertEqual(amap["first_pass_target"],"2026-09-30")
+        self.assertEqual(self.data["summary"]["pipeline_state"]["Scraping complete"],13)
+        self.assertEqual(self.data["summary"]["pipeline_state"]["Observation needs review; exact rejected set pinned"],1)
+        self.assertEqual(self.data["summary"]["pipeline_state"]["Observation needs review; guarded promotion manifest pending"],8)
+        self.assertEqual(self.data["summary"]["attention_state"]["On track"],484)
+        self.assertEqual(self.data["summary"]["attention_state"]["Review"],40)
+        mali=next(row for row in self.data["countries"] if row["country"]=="MLI")
+        self.assertEqual(mali["blocked"],2)
+        self.assertEqual(mali["review"],1)
+        self.assertEqual(mali["progress"],"Blocked")
 
     def test_mobile_source_table_keeps_current_stage_and_count_series_visible(self):
         app=(ROOT/"app.js").read_text(encoding="utf-8")
