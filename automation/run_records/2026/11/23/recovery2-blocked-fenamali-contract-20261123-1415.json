@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "kind": "public_source_advancement_record",
+  "automation_id": "priority-country-scraping-monitor",
+  "schedule_reconciliation": {
+    "elapsed_unclaimed_window_local": "2026-11-23 06:15 America/New_York",
+    "guard_runs": 0,
+    "workflow_units": 0,
+    "completion_claimed": false,
+    "basis": "The window had elapsed beyond its bounded active period before this invocation; no retroactive work or completion is claimed."
+  },
+  "window": {
+    "scheduled_local": "2026-11-23 14:15 America/New_York",
+    "completed_at_utc": "2026-11-23T19:44:40Z",
+    "next_eligible_local": "2026-11-23 22:15 America/New_York"
+  },
+  "capacity_gate": {
+    "guard_runs": 1,
+    "decision": "blocked",
+    "launch_allowed": false,
+    "active_roots_checked": 5,
+    "active_root_bytes": 0,
+    "maximum_log_bytes": 0,
+    "scraper_pattern_matches": 0,
+    "browser_pattern_matches": 1,
+    "permitted_network_workers": 0,
+    "permitted_browser_workers": 0,
+    "hard_blocks": [
+      "filesystem_free_bytes_blocked",
+      "filesystem_free_percent_blocked",
+      "load_per_cpu_blocked"
+    ],
+    "reduced_signals": [
+      "swap_used_percent_reduced"
+    ],
+    "guard_receipt_sha256": "87b70aa75c99732ea38c754aea7d54e9a94cbf39c7fafe69e26e6bbb96037c09",
+    "guard_exit_evidence_sha256": "5378796307535df3ec8d8b15a2e2dc5641419c3d3060cfe32238c0fa973f7aa3",
+    "guard_review_sha256": "44a9e0b2e936c24d597d7ea792b67407c2cfbcbe8540ad95cad318384b939aa2",
+    "guard_review": "approved_24_of_24",
+    "second_guard_run": false,
+    "launch_path_actions_run": false,
+    "active_packet_state": "untouched_unauthorized_unattempted_unlaunched_unconsumed"
+  },
+  "advancement": {
+    "source_key": "MLEED|fenamali.org",
+    "country": "MLI",
+    "state": "publisher_inactivity_verified",
+    "production_writes": false,
+    "verified_completion": true,
+    "scope": {
+      "publication_date_field": "date_publish",
+      "range_start": "2026-08-18",
+      "range_end": "2026-09-24",
+      "months": [
+        "2026-08",
+        "2026-09"
+      ],
+      "public_scope_hash": "sha256-base64url:yNrikiUQigyvvsbU9yJ9pJX2Vyea1llTwmnrYRB3V0I",
+      "generated_at_utc": "2026-11-23T19:18:45Z"
+    },
+    "observation": {
+      "accounting_equation": "0=0+0+0+0+0+0+0",
+      "observed_total": 0,
+      "accepted_eligible": 0,
+      "in_window_ineligible": 0,
+      "before_window": 0,
+      "prefetch_only": 0,
+      "after_cutoff": 0,
+      "undated": 0,
+      "eligible_outside_acceptance_window": 0,
+      "evidenced_zero_buckets": [
+        ["2026-08", 0, 0],
+        ["2026-09", 0, 0]
+      ],
+      "zero_basis": {
+        "publisher_reported_total": 0,
+        "publisher_pages_checked": 1,
+        "posts_on_terminal_page": 0,
+        "discovered": 0,
+        "selected": 0,
+        "passed": 0,
+        "coverage_complete": true,
+        "publication_inactive_for_window": true,
+        "failures_or_exclusions": 0
+      },
+      "forward_reverse_pair_available": false,
+      "forward_reverse_identity_equivalence_claimed": false,
+      "preservation": "The exact empty current-scope identity set and both evidenced zero buckets are frozen; observation must not be rerun and the unobserved tail must not be inferred."
+    },
+    "monthly_series": {
+      "points": [
+        ["2026-08", null, null],
+        ["2026-09", null, null]
+      ],
+      "promoted_status": "pending_promotion_terminal_receipt",
+      "tcg_status": "pending_tcg_receipt",
+      "missing_values_inferred_as_zero": false
+    },
+    "historical_evidence": {
+      "scrape_series_points": 18,
+      "series_through_month": "2026-07",
+      "recorded_tcg_through": "2025-06-16",
+      "source_level_tcg_terminal_receipt_available": false,
+      "current_scope_identity_equivalent": false
+    },
+    "boundaries": {
+      "recorded_notion": "2026-09-17",
+      "canonical_operational_through": "2026-09-24",
+      "scrape_record_through": "2026-09-24",
+      "observation_scope_through": "2026-09-24",
+      "operational_verified_through": "2026-09-24",
+      "first_pass_verified_through": "2026-09-24",
+      "strict_verified_through": "2026-09-24",
+      "first_pass_target": "2026-09-30",
+      "canonical_boundaries_changed": false
+    },
+    "contract_sha256": "30419de9a55146513c491d521837cd27365a2e48eef717350a9ced0733f6bb27",
+    "independent_contract_review_sha256": "fce26f80e38c803c2ec139a0df5c8871e10b64b55888c344eac8053a06371ea8",
+    "independent_contract_review": "approved_54_of_54"
+  },
+  "tracker_release": {
+    "changed_assertions_published_before_execution_commit": "23a2c39420af3b1c6b9d5f6ace5dac4645ca814a",
+    "primary_validation": "passed_36_of_36",
+    "independent_validation": "passed_36_of_36",
+    "independent_semantic_validation": "passed_40_of_40",
+    "prerelease_privacy_schema_audit": "passed_32_of_32",
+    "prerelease_exact_diff_audit": "passed_24_of_24",
+    "space_commit": "79185a0d4eaa0a51f3be42c6ff9243a7833d55ab",
+    "snapshot_sha256": "8b4da31a9dc7a6d30541a66ab7ffaab5126756d6f0357d756365902d1ccd6a31",
+    "javascript_sha256": "1ecdcd1889c7abad4b1218d86d5999b0170aa44c77336d88775e722bfe1cbcab",
+    "runtime_stage": "RUNNING",
+    "http_statuses": {
+      "root": 200,
+      "index": 200,
+      "snapshot": 200,
+      "javascript": 200
+    },
+    "remote_snapshot_byte_identical": true,
+    "current_scope_contracts": 37,
+    "source_overrides": 43,
+    "all_null_current_scope_buckets": 75,
+    "historical_count_series_preserved": 636,
+    "waves_preserved": 9,
+    "postpublication_audit": "approved_30_of_30",
+    "postpublication_audit_sha256": "c0929f413dbeb07d6b11f0a7ae221f3a3ec73d6e5a4d4d95acb0e14126fc1a51",
+    "authorized_delta": {
+      "source": "MLEED|fenamali.org",
+      "country": "MLI blocked remains 2 and review 1 to 2; progress remains Blocked",
+      "pipeline": "Scraping complete 13 to 12; observation dry run accepted 15 to 16",
+      "attention": "On track 484 to 483; Review 40 to 41"
+    },
+    "comparison_space_commit": "f164108f8be83d7b8e06e6c90887b77f0ba66a3a",
+    "comparison_space_changed": false
+  },
+  "reviewed_process_exception": {
+    "occurred": true,
+    "scope": "filename_only_locator_output",
+    "closed_content_or_hash_read": false,
+    "closed_state_modified": false,
+    "output_discarded": true,
+    "influenced_selection_evidence_or_state": false,
+    "must_not_be_repeated": true
+  },
+  "safety": {
+    "closed_runtime_content_access": false,
+    "process_or_runtime_inspection_outside_guard": false,
+    "source_access": false,
+    "database_access": false,
+    "browser_access": false,
+    "ssh_access": false,
+    "production_write": false,
+    "raw_identities_published": false,
+    "article_urls_or_data_published": false,
+    "local_paths_published": false,
+    "infrastructure_or_credentials_published": false,
+    "private_notes_or_pids_published": false,
+    "canonical_workbook_published": false
+  }
+}
